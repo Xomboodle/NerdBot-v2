@@ -2,3 +2,5 @@ V.1.0 - The Big Reveal
 A whole host of big changes have happened, deeming NerdBot officially
 in its 1.0 status! Let's take a look at them.
 - Redesigned changelog messages. All shiny and formatted.
+- Updated the crate/clam spawning. Smoother separation of server spawns and a timer, so they don't spawn too often.
+  Completely spam-proof.
