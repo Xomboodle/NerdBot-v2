@@ -44,6 +44,11 @@ async def on_ready():
 
 
 @bot.listen()
+async def on_guild_join(guild: discord.Guild):
+    await customs.on_guild_join(guild)
+
+
+@bot.listen()
 async def on_message(message: discord.Message):
     message_content: str = message.content.lower()
 
@@ -54,6 +59,11 @@ async def on_message(message: discord.Message):
     await functions.generate_claimable(message.guild, message.channel)
 
     await functions.respond_to_message(message.channel, message_content, bot)
+
+
+@bot.listen()
+async def on_reaction_add(reaction: discord.Reaction, user: discord.User | discord.Member):
+    await customs.on_reaction_add(reaction, user)
 
 
 try:

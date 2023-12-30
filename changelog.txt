@@ -4,3 +4,4 @@ in its 1.0 status! Let's take a look at them.
 - Redesigned changelog messages. All shiny and formatted.
 - Updated the crate/clam spawning. Smoother separation of server spawns and a timer, so they don't spawn too often.
   Completely spam-proof.
+- Begun storing data specific to a guild (server) separate from within the code, so it carries across bot restarts.
