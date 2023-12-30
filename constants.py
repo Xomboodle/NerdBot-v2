@@ -20,4 +20,3 @@ REACTION_IMAGES: Dict[str, str] = {
     "sus": "https://tenor.com/view/hmm-suspect-gif-22611582"
 }
 SWEARS: List[str] = ["fuck", "shit", "bitch"]
-FIFTEEN_MINUTES: int = 900

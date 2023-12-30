@@ -12,8 +12,6 @@ from webserver import keep_alive
 
 import commands as customs
 
-import functions
-
 import constants
 
 # Set the variables in .env file as environment variables
@@ -41,17 +39,6 @@ bot = commands.Bot(command_prefix='?', activity=activity,
 @bot.listen()
 async def on_ready():
     await customs.on_ready(bot=bot)
-
-
-@bot.listen()
-async def on_message(message: discord.Message):
-    message_content: str = message.content.lower()
-
-    # Don't check messages sent by the bot itself
-    if functions.validate_author(message.author, bot):
-        return
-
-    await functions.generate_claimable(message.guild, message.channel)
 
 
 try:
