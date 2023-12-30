@@ -53,6 +53,7 @@ async def on_message(message: discord.Message):
 
     await functions.generate_claimable(message.guild, message.channel)
 
+    await functions.respond_to_message(message.channel, message_content, bot)
 
 
 try:

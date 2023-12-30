@@ -11,6 +11,10 @@ import time
 
 from typing import Dict, Any, List
 
+import re
+
+import inspirobot
+
 import constants
 
 
@@ -108,3 +112,20 @@ async def generate_claimable(guild: Guild,
         await generate_crate(guild_id, claimables, channel)
     elif number == 2 and generate[1]:
         await generate_clam(guild_id, claimables, channel)
+
+
+async def respond_to_message(channel: TextChannel | Thread, content: str, bot: Bot):
+    for word in constants.SWEARS:
+        if word in content:
+            await channel.send("Ooh, do you kiss your momma with that mouth?")
+            break
+
+    # Specific cases
+    if re.findall('work', content):
+        await channel.send("WORK?! You should be gaming!")
+    elif re.findall('inspire me', content):
+        inspiration = inspirobot.generate()
+        await channel.send(inspiration.url)
+    elif bot.command_prefix == content or re.findall('nerdbot', content):
+        response: str = constants.NERD_RESPONSES[random.randint(0, len(constants.NERD_RESPONSES))]
+        await channel.send(response)
