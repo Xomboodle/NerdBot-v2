@@ -30,20 +30,23 @@ async def on_ready(bot: Bot):
     recent_update: str = lines[0]
     with open('updated.txt', 'r') as r_file:
         updated_lines: str = r_file.read()
-    if recent_update != updated_lines:
-        with open('updated.txt', 'w') as w_file:
-            w_file.write(recent_update)
-        for guild in bot.guilds:
-            # Set up data storage for guild if this is the first time the bot is operational in it, but had
-            # already joined
-            if str(guild.id) not in data.keys():
-                data[str(guild.id)] = {}
+    for guild in bot.guilds:
+        # Set up data storage for guild if this is the first time the bot is operational in it, but had
+        # already joined
+        if str(guild.id) not in data.keys():
+            data[str(guild.id)] = {
+                "crateboard": {},
+                "clamboard": {}
+            }
+        if recent_update != updated_lines:
+            with open('updated.txt', 'w') as w_file:
+                w_file.write(recent_update)
             channel: discord.TextChannel = guild.system_channel
             await channel.send(
                 f"# NEW UPDATE:\n{functions.format_update(recent_update)}"
             )
-        with open('guilddata.json', 'w') as w_file:
-            json.dump(data, w_file)
+    with open('guilddata.json', 'w') as w_file:
+        json.dump(data, w_file)
 
 
 async def on_guild_join(guild: Guild):
@@ -105,6 +108,8 @@ async def claim(guild: Guild, channel: Channel, author: Person):
     # Prepare and send edited message for the original crate message
     await functions.edit_crate_message(int(crate_data['current'][guild_id]['message']), channel, member_info)
 
+    functions.update_score(guild_id, member_info.id, score)
+
     functions.update_crate_data(data, guild_id)
 
 
@@ -131,5 +136,7 @@ async def clam(guild: Guild, channel: Channel, author: Person):
 
     # Prepare and send edited message for the original crate message
     await functions.edit_clam_message(int(clam_data['current'][guild_id]['message']), channel, member_info)
+
+    functions.update_clam_score(guild_id, member_info.id)
 
     functions.update_clam_data(data, guild_id)

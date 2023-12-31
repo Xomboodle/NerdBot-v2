@@ -18,8 +18,6 @@ import functions
 
 import embeds
 
-import constants
-
 # Set the variables in .env file as environment variables
 load_dotenv()
 

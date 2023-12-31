@@ -186,3 +186,31 @@ def update_clam_data(data: Dict[str, Any], guild_id: str):
 
     with open('claimables.json', 'w') as w_file:
         json.dump(data, w_file)
+
+
+def update_score(guild_id: str, member_id: int, score: int):
+    with open('guilddata.json', 'r') as r_file:
+        data = json.load(r_file)
+    try:
+        member_score: int = data[guild_id]['crateboard'][str(member_id)]
+    except KeyError:  # User has not had a score before now
+        member_score: int = 10
+    member_score += score
+    data[guild_id]['crateboard'][str(member_id)] = member_score
+
+    with open('guilddata.json', 'w') as w_file:
+        json.dump(data, w_file)
+
+
+def update_clam_score(guild_id: str, member_id: int):
+    with open('guilddata.json', 'r') as r_file:
+        data = json.load(r_file)
+
+    try:
+        member_score: int = data[guild_id]['clamboard'][str(member_id)]
+        data[guild_id]['clamboard'][str(member_id)] = member_score + 1
+    except KeyError:  # User has not claimed a clam before
+        data[guild_id]['clamboard'][str(member_id)] = 1
+
+    with open('guilddata.json', 'w') as w_file:
+        json.dump(data, w_file)
