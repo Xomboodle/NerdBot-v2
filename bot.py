@@ -5,6 +5,8 @@ import os
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import has_permissions
+from discord.ext.commands.context import Context
 
 from dotenv import load_dotenv
 
@@ -13,6 +15,8 @@ from webserver import keep_alive
 import commands as customs
 
 import functions
+
+import embeds
 
 import constants
 
@@ -24,6 +28,7 @@ load_dotenv()
 # so this will be set here instead.
 TOKEN: str = os.environ.get('TOKEN')
 
+# region Setup
 """
     Setting up the bot. Includes permissions, activity display on the profile,
     and the bot itself.
@@ -37,7 +42,12 @@ activity = discord.Activity(type=discord.ActivityType.playing,
 bot = commands.Bot(command_prefix='?', activity=activity,
                    help_command=None, intents=intents)
 
+# Uses command prefix, so needs that set first
+HELP = embeds.generate_help_embed(bot.command_prefix)
+# endregion
 
+
+# region Listen Events
 @bot.listen()
 async def on_ready():
     await customs.on_ready(bot=bot)
@@ -64,6 +74,42 @@ async def on_message(message: discord.Message):
 @bot.listen()
 async def on_reaction_add(reaction: discord.Reaction, user: discord.User | discord.Member):
     await customs.on_reaction_add(reaction, user)
+# endregion
+
+
+@bot.command()
+@has_permissions(manage_permissions=True)
+async def bonk(ctx: Context, member: discord.Member):
+    if not functions.validate_usertype(member, type(discord.Member)):
+        await ctx.send(f"{member} is an invalid input.")
+        return
+    # Restrict user
+    for channel in ctx.guild.text_channels:
+        # Convert member to user role
+        user: discord.User = await bot.fetch_user(member.id)
+        permissions = channel.overwrites_for(user)
+        permissions.update(send_messages=False)
+        await channel.set_permissions(
+            member,
+            overwrite=permissions,
+            reason="Bonk!"
+        )
+    await ctx.send(f"<@!{member.id} has been sent to jail.")
+
+
+@bot.command()
+async def claim(ctx: Context):
+    await customs.claim(ctx.guild, ctx.channel, ctx.author)
+
+
+@bot.command()
+async def clam(ctx: Context):
+    await customs.clam(ctx.guild, ctx.channel, ctx.author)
+
+
+@bot.command()
+async def help(ctx: Context):
+    await ctx.channel.send(embed=HELP)
 
 
 try:

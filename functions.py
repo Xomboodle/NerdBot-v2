@@ -34,6 +34,10 @@ def validate_author(user: User | Member,
     return user == bot.user
 
 
+def validate_usertype(user: Any, usertype: Any):
+    return isinstance(user, usertype)
+
+
 async def generate_crate(guild_id: str,
                          claimables: Dict[str, Any],
                          channel: TextChannel | Thread):
@@ -49,7 +53,8 @@ async def generate_crate(guild_id: str,
     )
     claimables['crate']['unclaimed'][guild_id] = True
     embed_message: Message = await channel.send(embed=crate_embed)
-    claimables['crate']['current'][guild_id] = str(embed_message.id)
+    claimables['crate']['current'][guild_id]['message'] = str(embed_message.id)
+    claimables['crate']['current'][guild_id]['channel'] = str(channel.id)
 
     with open('claimables.json', 'w') as w_file:
         json.dump(claimables, w_file)
@@ -70,7 +75,9 @@ async def generate_clam(guild_id: str,
     )
 
     claimables['clam']['unclaimed'][guild_id] = True
-    claimables['clam']['current'][guild_id] = await channel.send(embed=clam_embed)
+    embed_message: Message = await channel.send(embed=clam_embed)
+    claimables['clam']['current'][guild_id]['message'] = str(embed_message.id)
+    claimables['clam']['current'][guild_id]['channel'] = str(channel.id)
 
     with open('claimables.json', 'w') as w_file:
         json.dump(claimables, w_file)
@@ -91,10 +98,10 @@ async def generate_claimable(guild: Guild,
         generate = [True, True]
         claimables['crate']['unclaimed'][guild_id] = False
         claimables['clam']['unclaimed'][guild_id] = False
-        claimables['crate']['current'][guild_id] = ""
-        claimables['clam']['current'][guild_id] = ""
-        claimables['crate']['lastCaught'][guild_id] = ""
-        claimables['clam']['lastCaught'][guild_id] = ""
+        claimables['crate']['current'][guild_id] = {}
+        claimables['clam']['current'][guild_id] = {}
+        claimables['crate']['lastCaught'][guild_id] = 0
+        claimables['clam']['lastCaught'][guild_id] = 0
 
     """
         Two checks carried out to determine whether a crate or clam is allowed to spawn:
@@ -102,12 +109,12 @@ async def generate_claimable(guild: Guild,
         2) The last crate/clam was claimed more than 15 minutes ago
     """
     now: float = time.time()
-    generate[0] = (now - int(claimables['crate']['lastCaught'][guild_id] or 0) >= constants.FIFTEEN_MINUTES) and \
+    generate[0] = (now - claimables['crate']['lastCaught'][guild_id] >= constants.FIFTEEN_MINUTES) and \
                   (not claimables['crate']['unclaimed'][guild_id])
-    generate[1] = (now - int(claimables['clam']['lastCaught'][guild_id] or 0) >= constants.FIFTEEN_MINUTES) and \
+    generate[1] = (now - claimables['clam']['lastCaught'][guild_id] >= constants.FIFTEEN_MINUTES) and \
                   (not claimables['clam']['unclaimed'][guild_id])
 
-    number: int = random.randint(1, 25)
+    number: int = random.randint(1, 3)
     if number == 1 and generate[0]:
         await generate_crate(guild_id, claimables, channel)
     elif number == 2 and generate[1]:
@@ -129,3 +136,53 @@ async def respond_to_message(channel: TextChannel | Thread, content: str, bot: B
     elif bot.command_prefix == content or re.findall('nerdbot', content):
         response: str = constants.NERD_RESPONSES[random.randint(0, len(constants.NERD_RESPONSES))]
         await channel.send(response)
+
+
+async def edit_crate_message(message_id: int, channel: TextChannel | Thread, member: Member):
+    message: discord.Message = await channel.fetch_message(message_id)
+
+    claim_embed: discord.Embed = discord.Embed(
+        title="Crate claimed!",
+        color=discord.Color.green()
+    )
+    claim_embed.add_field(
+        name="",
+        value=f"{member.display_name} claimed this crate."
+    )
+
+    await message.edit(embed=claim_embed)
+
+
+async def edit_clam_message(message_id: int, channel: TextChannel | Thread, member: Member):
+    message: discord.Message = await channel.fetch_message(message_id)
+
+    claim_embed: discord.Embed = discord.Embed(
+        title="Clam claimed!",
+        color=discord.Color.green()
+    )
+    claim_embed.add_field(
+        name="",
+        value=f"{member.display_name} claimed this clam."
+    )
+
+    await message.edit(embed=claim_embed)
+
+
+def update_crate_data(data: Dict[str, Any], guild_id: str):
+    data['crate']['unclaimed'][guild_id] = False
+    data['crate']['lastCaught'][guild_id] = time.time()
+    data['crate']['current'][guild_id] = {}
+    data['crate']['total'] += 1
+
+    with open('claimables.json', 'w') as w_file:
+        json.dump(data, w_file)
+
+
+def update_clam_data(data: Dict[str, Any], guild_id: str):
+    data['clam']['unclaimed'][guild_id] = False
+    data['clam']['lastCaught'][guild_id] = time.time()
+    data['clam']['current'][guild_id] = {}
+    data['clam']['total'] += 1
+
+    with open('claimables.json', 'w') as w_file:
+        json.dump(data, w_file)

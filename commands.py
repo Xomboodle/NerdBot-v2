@@ -1,4 +1,5 @@
 """commands.py"""
+import random
 
 # IMPORTS #
 import discord
@@ -11,6 +12,12 @@ import constants
 import functions
 
 from typing import List, Dict, Any
+from types import UnionType
+
+
+# Types
+Channel: UnionType = discord.TextChannel | discord.Thread
+Person: UnionType = User | Member
 
 
 # LISTEN EVENTS
@@ -49,7 +56,7 @@ async def on_guild_join(guild: Guild):
         json.dump(data, w_file)
 
 
-async def on_reaction_add(reaction: Reaction, user: User | Member):
+async def on_reaction_add(reaction: Reaction, user: Person):
     with open('guilddata.json', 'r') as r_file:
         data: Dict[str, Any] = json.load(r_file)
     guild_id = str(reaction.message.guild.id)
@@ -70,3 +77,59 @@ async def on_reaction_add(reaction: Reaction, user: User | Member):
     # Sends corresponding message based on reaction made.
     if reaction_name in constants.REACTION_IMAGES:
         await reaction.message.channel.send(constants.REACTION_IMAGES[reaction_name])
+
+
+async def claim(guild: Guild, channel: Channel, author: Person):
+    with open('claimables.json', 'r') as r_file:
+        data: Dict[str, Any] = json.load(r_file)
+    crate_data: Dict[str, Any] = data['crate']
+    guild_id: str = str(guild.id)
+
+    if not crate_data['unclaimed'][guild_id]:
+        await channel.send("No crate to claim!")
+        return
+
+    # Make sure we're claiming it in the right channel, to avoid confusion
+    if str(channel.id) != crate_data['current'][guild_id]['channel']:
+        await channel.send("The crate is in a different channel. Claim it there!")
+        return
+
+    member_info: Member = guild.get_member(author.id)
+    score: int = random.randint(10, 30)
+
+    await channel.send(
+        f"{member_info.display_name} claimed the crate."
+        f" They got {score} coins!"
+    )
+
+    # Prepare and send edited message for the original crate message
+    await functions.edit_crate_message(int(crate_data['current'][guild_id]['message']), channel, member_info)
+
+    functions.update_crate_data(data, guild_id)
+
+
+async def clam(guild: Guild, channel: Channel, author: Person):
+    with open('claimables.json', 'r') as r_file:
+        data: Dict[str, Any] = json.load(r_file)
+    clam_data: Dict[str, Any] = data['clam']
+    guild_id: str = str(guild.id)
+
+    if not clam_data['unclaimed'][guild_id]:
+        await channel.send("No clam to claim!")
+        return
+
+    # Make sure we're claiming it in the right channel, to avoid confusion
+    if str(channel.id) != clam_data['current'][guild_id]['channel']:
+        await channel.send("The clam to claim is clearly elsewhere. Claim it there!")
+        return
+
+    member_info: Member = guild.get_member(author.id)
+
+    await channel.send(
+        f"{member_info.display_name} claimed the clam, clearing the clog of clams to claim."
+    )
+
+    # Prepare and send edited message for the original crate message
+    await functions.edit_clam_message(int(clam_data['current'][guild_id]['message']), channel, member_info)
+
+    functions.update_clam_data(data, guild_id)
