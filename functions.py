@@ -9,13 +9,53 @@ import random
 
 import time
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 import re
 
 import inspirobot
 
 import constants
+
+
+def retrieve_guild_data() -> Dict[str, Any]:
+    with open('guilddata.json', 'r') as r_file:
+        data: Dict[str, Any] = json.load(r_file)
+
+    return data
+
+
+def retrieve_changelog_update() -> Tuple[str, str]:
+    with open('changelog.txt', 'r') as r_file:
+        lines: List[str] = r_file.read().split('\n\n')
+    # Check if there is a new update, applies markdown and returns
+    recent_update: str = lines[0]
+    with open('updated.txt', 'r') as r_file:
+        updated_lines: str = r_file.read()
+
+    return recent_update, updated_lines
+
+
+def retrieve_claimables_data() -> Dict[str, Any]:
+    with open('claimables.json', 'r') as r_file:
+        data: Dict[str, Any] = json.load(r_file)
+
+    return data
+
+
+def write_to_updated(update: str):
+    with open('updated.txt', 'w') as w_file:
+        w_file.write(update)
+
+
+def write_to_guild_data(data: Dict[str, Any]):
+    with open('guilddata.json', 'w') as w_file:
+        json.dump(data, w_file)
+
+
+def write_to_claimables(data: Dict[str, Any]):
+    with open('claimables.json', 'w') as w_file:
+        json.dump(data, w_file)
 
 
 def format_update(text: str) -> str:
@@ -56,8 +96,7 @@ async def generate_crate(guild_id: str,
     claimables['crate']['current'][guild_id]['message'] = str(embed_message.id)
     claimables['crate']['current'][guild_id]['channel'] = str(channel.id)
 
-    with open('claimables.json', 'w') as w_file:
-        json.dump(claimables, w_file)
+    write_to_claimables(claimables)
 
 
 async def generate_clam(guild_id: str,
@@ -79,14 +118,12 @@ async def generate_clam(guild_id: str,
     claimables['clam']['current'][guild_id]['message'] = str(embed_message.id)
     claimables['clam']['current'][guild_id]['channel'] = str(channel.id)
 
-    with open('claimables.json', 'w') as w_file:
-        json.dump(claimables, w_file)
+    write_to_claimables(claimables)
 
 
 async def generate_claimable(guild: Guild,
                              channel: TextChannel | Thread):
-    with open('claimables.json', 'r') as r_file:
-        claimables: Dict[str, Any] = json.load(r_file)
+    claimables: Dict[str, Any] = retrieve_claimables_data()
 
     generate: List[bool] = [False, False]  # [Crate, Clam]
     guild_id: str = str(guild.id)
@@ -174,8 +211,7 @@ def update_crate_data(data: Dict[str, Any], guild_id: str):
     data['crate']['current'][guild_id] = {}
     data['crate']['total'] += 1
 
-    with open('claimables.json', 'w') as w_file:
-        json.dump(data, w_file)
+    write_to_claimables(data)
 
 
 def update_clam_data(data: Dict[str, Any], guild_id: str):
@@ -184,13 +220,11 @@ def update_clam_data(data: Dict[str, Any], guild_id: str):
     data['clam']['current'][guild_id] = {}
     data['clam']['total'] += 1
 
-    with open('claimables.json', 'w') as w_file:
-        json.dump(data, w_file)
+    write_to_claimables(data)
 
 
 def update_score(guild_id: str, member_id: int, score: int):
-    with open('guilddata.json', 'r') as r_file:
-        data = json.load(r_file)
+    data: Dict[str, Any] = retrieve_guild_data()
     try:
         member_score: int = data[guild_id]['crateboard'][str(member_id)]
     except KeyError:  # User has not had a score before now
@@ -198,13 +232,11 @@ def update_score(guild_id: str, member_id: int, score: int):
     member_score += score
     data[guild_id]['crateboard'][str(member_id)] = member_score
 
-    with open('guilddata.json', 'w') as w_file:
-        json.dump(data, w_file)
+    write_to_guild_data(data)
 
 
 def update_clam_score(guild_id: str, member_id: int):
-    with open('guilddata.json', 'r') as r_file:
-        data = json.load(r_file)
+    data: Dict[str, Any] = retrieve_guild_data()
 
     try:
         member_score: int = data[guild_id]['clamboard'][str(member_id)]
@@ -212,13 +244,12 @@ def update_clam_score(guild_id: str, member_id: int):
     except KeyError:  # User has not claimed a clam before
         data[guild_id]['clamboard'][str(member_id)] = 1
 
-    with open('guilddata.json', 'w') as w_file:
-        json.dump(data, w_file)
+    write_to_guild_data(data)
 
 
 async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bool):
-    with open('guilddata.json', 'r') as r_file:
-        guild_data: Dict = json.load(r_file)[str(guild.id)]['crateboard' if coins else 'clamboard']
+    data: Dict[str, Any] = retrieve_guild_data()
+    guild_data: Dict = data[str(guild.id)]['crateboard' if coins else 'clamboard']
 
     leaderboard: Dict[str, int] = dict(
         sorted(guild_data.items(), key=lambda item: item[1], reverse=True)
