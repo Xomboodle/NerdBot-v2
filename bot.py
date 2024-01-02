@@ -110,6 +110,16 @@ async def help(ctx: Context):
     await ctx.channel.send(embed=HELP)
 
 
+@bot.command()
+async def highscore(ctx: Context):
+    await functions.get_leaderboard(ctx.guild, ctx.channel, True)
+
+
+@bot.command()
+async def clamscore(ctx: Context):
+    await functions.get_leaderboard(ctx.guild, ctx.channel, False)
+
+
 try:
     keep_alive()
     bot.run(TOKEN)

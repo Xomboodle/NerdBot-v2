@@ -5,4 +5,4 @@ in its 1.0 status! Let's take a look at them.
 - Updated the crate/clam spawning. Smoother separation of server spawns and a timer, so they don't spawn too often.
   Completely spam-proof.
 - Begun storing data specific to a guild (server) separate from within the code, so it carries across bot restarts.
-- Clam messages now update like crates do, when clams are claimed. They also have their own score!
+- Clam messages now update like crates do, when clams are claimed. They also have their own score and leaderboard!

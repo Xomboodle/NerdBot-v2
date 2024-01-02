@@ -114,7 +114,7 @@ async def generate_claimable(guild: Guild,
     generate[1] = (now - claimables['clam']['lastCaught'][guild_id] >= constants.FIFTEEN_MINUTES) and \
                   (not claimables['clam']['unclaimed'][guild_id])
 
-    number: int = random.randint(1, 3)
+    number: int = random.randint(1, 20)
     if number == 1 and generate[0]:
         await generate_crate(guild_id, claimables, channel)
     elif number == 2 and generate[1]:
@@ -214,3 +214,40 @@ def update_clam_score(guild_id: str, member_id: int):
 
     with open('guilddata.json', 'w') as w_file:
         json.dump(data, w_file)
+
+
+async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bool):
+    with open('guilddata.json', 'r') as r_file:
+        guild_data: Dict = json.load(r_file)[str(guild.id)]['crateboard' if coins else 'clamboard']
+
+    leaderboard: Dict[str, int] = dict(
+        sorted(guild_data.items(), key=lambda item: item[1], reverse=True)
+    )
+    users: List[str] = [*leaderboard]
+    leaderboard_embed: discord.Embed = discord.Embed(
+        title=f"{'Coins' if coins else 'Clams'} leaderboard",
+        color=discord.Color.red()
+    )
+
+    # Display top 10
+    position: int = 0
+    skipped: int = 0
+    while position < 10:
+        try:
+            user: Member | None = guild.get_member(int(users[position+skipped]))
+            if user is None:
+                # User may not exist, but we still need to get up to 10 users if they exist later
+                skipped += 1
+                continue
+        except IndexError:  # Not enough server members have got on the leaderboard
+            break
+
+        leaderboard_embed.add_field(
+            name=f"{position+1} {user.display_name}",
+            value=f"{leaderboard[str(user.id)]} {'coins' if coins else 'clams'}",
+            inline=False
+        )
+
+        position += 1
+
+    await channel.send(embed=leaderboard_embed)
