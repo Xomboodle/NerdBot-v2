@@ -131,3 +131,33 @@ async def clam(guild: Guild, channel: Channel, author: Person):
     functions.update_clam_score(guild_id, member_info.id)
 
     functions.update_clam_data(data, guild_id)
+
+
+async def coins(guild: Guild, channel: Channel, author: Person):
+    data: Dict[str, Any] = functions.retrieve_guild_data()
+    guild_id: str = str(guild.id)
+    author_id: str = str(author.id)
+
+    # In case no coins have been won or claimed from crates
+    if data[guild_id]['crateboard'][author_id] is None:
+        data[guild_id]['crateboard'][author_id] = 10
+        functions.write_to_guild_data(data)
+
+    await channel.send(
+        f"You have **{data[guild_id]['crateboard'][author_id]}** coins!"
+    )
+
+
+async def clams(guild: Guild, channel: Channel, author: Person):
+    data: Dict[str, Any] = functions.retrieve_guild_data()
+    guild_id: str = str(guild.id)
+    author_id: str = str(author.id)
+
+    # In case no clams have been won or claimed from crates
+    if data[guild_id]['clamboard'][author_id] is None:
+        data[guild_id]['clamboard'][author_id] = 0
+        functions.write_to_guild_data(data)
+
+    await channel.send(
+        f"You have **{data[guild_id]['clamboard'][author_id]}** clams!"
+    )

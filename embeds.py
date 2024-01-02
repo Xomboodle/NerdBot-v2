@@ -22,6 +22,10 @@ def generate_help_embed(prefix: str) -> Embed:
         value="```Claim a clam if there's a clam to claim.```"
     )
     help_embed.add_field(
+        name="clams",
+        value="```Clear your clogged cloud of ...cloughts... with your collection of clams.```"
+    )
+    help_embed.add_field(
         name="clamscore",
         value="```Like highscore, but for clams.```"
     )

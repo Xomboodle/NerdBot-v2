@@ -106,6 +106,21 @@ async def clam(ctx: Context):
 
 
 @bot.command()
+async def clams(ctx: Context):
+    await customs.clams(ctx.guild, ctx.channel, ctx.author)
+
+
+@bot.command()
+async def clamscore(ctx: Context):
+    await functions.get_leaderboard(ctx.guild, ctx.channel, False)
+
+
+@bot.command()
+async def coins(ctx: Context):
+    await customs.coins(ctx.guild, ctx.channel, ctx.author)
+
+
+@bot.command()
 async def help(ctx: Context):
     await ctx.channel.send(embed=HELP)
 
@@ -115,9 +130,7 @@ async def highscore(ctx: Context):
     await functions.get_leaderboard(ctx.guild, ctx.channel, True)
 
 
-@bot.command()
-async def clamscore(ctx: Context):
-    await functions.get_leaderboard(ctx.guild, ctx.channel, False)
+
 
 
 try:
