@@ -130,7 +130,12 @@ async def highscore(ctx: Context):
     await functions.get_leaderboard(ctx.guild, ctx.channel, True)
 
 
-
+@bot.command()
+async def insult(ctx: Context, arg: str | None = None):
+    if arg is None:
+        await ctx.channel.send("At least choose someone to insult!")
+        return
+    await customs.insult(ctx.channel, ctx.message, ctx.message.author, arg)
 
 
 try:

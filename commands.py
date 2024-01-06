@@ -3,7 +3,7 @@ import random
 
 # IMPORTS #
 import discord
-from discord import Reaction, User, Member, Guild
+from discord import Reaction, User, Member, Guild, Message
 from discord.ext.commands import Bot
 
 import json
@@ -161,3 +161,13 @@ async def clams(guild: Guild, channel: Channel, author: Person):
     await channel.send(
         f"You have **{data[guild_id]['clamboard'][author_id]}** clams!"
     )
+
+
+async def insult(channel: Channel, message: Message, author: Person, user: str):
+    # Delete command call for anonymity
+    await message.delete()
+
+    chosen_insult: int = random.randint(0, len(constants.INSULTS)-1)
+    insult_message: str = constants.INSULTS[chosen_insult].format(arg=user, arg2=f"<@!{author.id}>")
+
+    await channel.send(insult_message)
