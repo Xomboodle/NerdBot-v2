@@ -25,15 +25,13 @@ def retrieve_guild_data() -> Dict[str, Any]:
     return data
 
 
-def retrieve_changelog_update() -> Tuple[str, str]:
-    with open('changelog.txt', 'r') as r_file:
-        lines: List[str] = r_file.read().split('\n\n')
-    # Check if there is a new update, applies markdown and returns
-    recent_update: str = lines[0]
-    with open('updated.txt', 'r') as r_file:
-        updated_lines: str = r_file.read()
+def retrieve_changelog() -> Tuple[Dict[str, Any], str]:
+    with open('changelog.json', 'r') as r_file:
+        data: Dict[str, Any] = json.load(r_file)
 
-    return recent_update, updated_lines
+    latest_key: str = sorted([*data.keys()], key=lambda item: int(item), reverse=True)[0]
+
+    return data, latest_key
 
 
 def retrieve_claimables_data() -> Dict[str, Any]:
@@ -43,13 +41,13 @@ def retrieve_claimables_data() -> Dict[str, Any]:
     return data
 
 
-def write_to_updated(update: str):
-    with open('updated.txt', 'w') as w_file:
-        w_file.write(update)
-
-
 def write_to_guild_data(data: Dict[str, Any]):
     with open('guilddata.json', 'w') as w_file:
+        json.dump(data, w_file)
+
+
+def write_to_changelog(data: Dict[str, Any]):
+    with open('changelog.json', 'w') as w_file:
         json.dump(data, w_file)
 
 
@@ -58,15 +56,16 @@ def write_to_claimables(data: Dict[str, Any]):
         json.dump(data, w_file)
 
 
-def format_update(text: str) -> str:
+def format_update(data: Dict[str, Any]) -> str:
     # Need to get the title of the update and set as a heading
-    heading: str = text.split('\n')[0]
-    subheading: str = text.split('\n-')[0].replace(heading + "\n", "")
+    heading: str = data['title']
+    subheading: str = data['content']['subtext']
 
-    changelog: str = text.replace(heading, f"## {heading}")
-    changelog = changelog.replace(subheading, f"_{subheading}_\n")
+    update: str = f"## {heading}\n_{subheading}_\n\n"
+    for key in data['content']['items'].keys():
+        update += f"- {data['content']['items'][key]}\n"
 
-    return changelog
+    return update
 
 
 def validate_author(user: User | Member,
