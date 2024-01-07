@@ -23,9 +23,9 @@ Person: UnionType = User | Member
 # LISTEN EVENTS
 async def on_ready(bot: Bot):
     data: Dict[str, Any] = functions.retrieve_guild_data()
-    recent_update: str
-    update: str
-    recent_update, update = functions.retrieve_changelog_update()
+    changelog: Dict[str, Any]
+    latest_key: str
+    changelog, latest_key = functions.retrieve_changelog()
     for guild in bot.guilds:
         # Set up data storage for guild if this is the first time the bot is operational in it, but had
         # already joined
@@ -34,11 +34,12 @@ async def on_ready(bot: Bot):
                 "crateboard": {},
                 "clamboard": {}
             }
-        if recent_update != update:
-            functions.write_to_updated(recent_update)
+        if not changelog[latest_key]["sent"]:
+            changelog[latest_key]["sent"] = True
+            functions.write_to_changelog(changelog)
             channel: discord.TextChannel = guild.system_channel
             await channel.send(
-                f"# NEW UPDATE:\n{functions.format_update(recent_update)}"
+                f"# NEW UPDATE:\n{functions.format_update(changelog[latest_key])}"
             )
     functions.write_to_guild_data(data)
 
@@ -75,6 +76,7 @@ async def on_reaction_add(reaction: Reaction, user: Person):
         await reaction.message.channel.send(constants.REACTION_IMAGES[reaction_name])
 
 
+# CUSTOM COMMANDS
 async def claim(guild: Guild, channel: Channel, author: Person):
     data: Dict[str, Any] = functions.retrieve_claimables_data()
     crate_data: Dict[str, Any] = data['crate']
