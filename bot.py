@@ -142,6 +142,11 @@ async def insult(ctx: Context, arg: str | None = None):
 @bot.command()
 async def meme(ctx: Context):
     await customs.meme(ctx.channel)
+
+
+@bot.command()
+async def recent(ctx: Context):
+    await customs.recent(ctx.channel)
 # endregion
 
 

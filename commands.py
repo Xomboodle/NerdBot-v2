@@ -178,3 +178,11 @@ async def meme(channel: Channel):
     meme_embed.set_image(url=meme_url)
 
     await channel.send(embed=meme_embed)
+
+
+async def recent(channel: Channel):
+    data: Dict[str, Any]
+    latest_key: str
+    data, latest_key = functions.retrieve_changelog()
+
+    await channel.send(functions.format_update(data[latest_key]))
