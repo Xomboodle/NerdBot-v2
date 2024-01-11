@@ -147,6 +147,13 @@ async def meme(ctx: Context):
 @bot.command()
 async def recent(ctx: Context):
     await customs.recent(ctx.channel)
+
+
+@bot.command()
+async def smite(ctx: Context, arg: str | None = None):
+    self: bool = True if arg is None else False
+    user: str = arg if not self else str(ctx.message.author.id)
+    await customs.smite(ctx.channel, user, self)
 # endregion
 
 
