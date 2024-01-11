@@ -4,18 +4,14 @@ from discord import User, Member, Guild, Embed, TextChannel, Thread, Message
 from discord.ext.commands import Bot
 
 import json
-
 import random
-
 import time
-
-from typing import Dict, Any, List, Tuple
-
 import re
-
 import inspirobot
 
 import constants
+
+from typing import Dict, Any, List, Tuple
 
 
 def retrieve_guild_data() -> Dict[str, Any]:
@@ -281,3 +277,8 @@ async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bo
         position += 1
 
     await channel.send(embed=leaderboard_embed)
+
+
+def get_random_number(start: int, end: int) -> int:
+    result: int = random.randint(start, end)
+    return result
