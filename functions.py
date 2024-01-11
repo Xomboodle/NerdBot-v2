@@ -9,6 +9,9 @@ import time
 import re
 import inspirobot
 
+import meme_get
+from meme_get.memesites import RedditMemes, Meme
+
 import constants
 
 from typing import Dict, Any, List, Tuple
@@ -281,4 +284,12 @@ async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bo
 
 def get_random_number(start: int, end: int) -> int:
     result: int = random.randint(start, end)
+    return result
+
+
+def get_meme() -> str:
+    reddit_memes: RedditMemes = meme_get.RedditMemes()
+    memes: List[Meme] = reddit_memes.get_memes(100)
+    result: str = memes[get_random_number(0, 99)].get_pic_url()
+
     return result
