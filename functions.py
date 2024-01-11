@@ -293,3 +293,11 @@ def get_meme() -> str:
     result: str = memes[get_random_number(0, 99)].get_pic_url()
 
     return result
+
+
+def find_title(version: str, titles: List[Tuple[str, str]]) -> str:
+    for title in titles:
+        if re.search(version, title[1]) is not None:
+            return title[0]
+    else:
+        return "-1"

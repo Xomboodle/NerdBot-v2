@@ -154,6 +154,11 @@ async def smite(ctx: Context, arg: str | None = None):
     self: bool = True if arg is None else False
     user: str = arg if not self else str(ctx.message.author.id)
     await customs.smite(ctx.channel, user, self)
+
+
+@bot.command()
+async def update(ctx: Context, arg: str | None = None):
+    await customs.update(ctx.channel, arg)
 # endregion
 
 

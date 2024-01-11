@@ -225,7 +225,8 @@
         "1": "Updated the crate/clam spawning. Smoother separation of server spawns and a timer, so they don't spawn too often. Completely spam-proof.",
         "2": "Begun storing data specific to a guild (server) separate from within the code, so it carries across bot restarts.",
         "3": "Clam messages now update like crates do, when clams are claimed. They also have their own score and leaderboard!",
-        "4": "Added `clams` command. Now you can see how many clams you've collected!"
+        "4": "Added `clams` command. Now you can see how many clams you've collected!",
+        "5": "Altered the `update` command. Now you can search for a specific bot version's changelog!"
       }
     },
     "sent": false
