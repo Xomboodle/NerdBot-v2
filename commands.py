@@ -1,17 +1,14 @@
 """commands.py"""
-import random
 
 # IMPORTS #
 import discord
 from discord import Reaction, User, Member, Guild, Message
 from discord.ext.commands import Bot
 
-import json
-
 import constants
 import functions
 
-from typing import List, Dict, Any
+from typing import Dict, Any
 from types import UnionType
 
 
@@ -92,7 +89,7 @@ async def claim(guild: Guild, channel: Channel, author: Person):
         return
 
     member_info: Member = guild.get_member(author.id)
-    score: int = random.randint(10, 30)
+    score: int = functions.get_random_number(10, 30)
 
     await channel.send(
         f"{member_info.display_name} claimed the crate."
@@ -169,7 +166,7 @@ async def insult(channel: Channel, message: Message, author: Person, user: str):
     # Delete command call for anonymity
     await message.delete()
 
-    chosen_insult: int = random.randint(0, len(constants.INSULTS)-1)
+    chosen_insult: int = functions.get_random_number(0, len(constants.INSULTS)-1)
     insult_message: str = constants.INSULTS[chosen_insult].format(arg=user, arg2=f"<@!{author.id}>")
 
     await channel.send(insult_message)
