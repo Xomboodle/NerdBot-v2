@@ -75,6 +75,7 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User | disco
 # endregion
 
 
+# region User Commands
 @bot.command()
 @has_permissions(manage_permissions=True)
 async def bonk(ctx: Context, member: discord.Member):
@@ -136,6 +137,12 @@ async def insult(ctx: Context, arg: str | None = None):
         await ctx.channel.send("At least choose someone to insult!")
         return
     await customs.insult(ctx.channel, ctx.message, ctx.message.author, arg)
+
+
+@bot.command()
+async def meme(ctx: Context):
+    await customs.meme(ctx.channel)
+# endregion
 
 
 try:

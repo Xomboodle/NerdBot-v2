@@ -2,7 +2,7 @@
 
 # IMPORTS #
 import discord
-from discord import Reaction, User, Member, Guild, Message
+from discord import Reaction, User, Member, Guild, Message, Embed
 from discord.ext.commands import Bot
 
 import constants
@@ -170,3 +170,11 @@ async def insult(channel: Channel, message: Message, author: Person, user: str):
     insult_message: str = constants.INSULTS[chosen_insult].format(arg=user, arg2=f"<@!{author.id}>")
 
     await channel.send(insult_message)
+
+
+async def meme(channel: Channel):
+    meme_url: str = functions.get_meme()
+    meme_embed: Embed = discord.Embed(title="", description="")
+    meme_embed.set_image(url=meme_url)
+
+    await channel.send(embed=meme_embed)
