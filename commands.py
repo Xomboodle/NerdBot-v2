@@ -8,7 +8,7 @@ from discord.ext.commands import Bot
 import constants
 import functions
 
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 from types import UnionType
 
 
@@ -193,3 +193,21 @@ async def smite(channel: Channel, user: str, self: bool):
         await channel.send(f"<@!{user}> was confused, and hurt themselves!")
     else:
         await channel.send(f"The gods dislike you, {user}. They smite you into oblivion.")
+
+
+async def update(channel: Channel, version: str | None):
+    if version is None:
+        await recent(channel)
+        return
+
+    data: Dict[str, Any]
+    data, _ = functions.retrieve_changelog()
+    # Get the update versions in a list
+    titles: List[Tuple[str, str]] = [(key, item['title']) for key, item in data.items()]
+    # Check for likeness with user input
+    key: str = functions.find_title(version, titles)
+    if key == "-1":
+        await channel.send("Hmm, I couldn't find a version like that!")
+        return
+
+    await channel.send(functions.format_update(data[key]))
