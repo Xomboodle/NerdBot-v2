@@ -186,3 +186,10 @@ async def recent(channel: Channel):
     data, latest_key = functions.retrieve_changelog()
 
     await channel.send(functions.format_update(data[latest_key]))
+
+
+async def smite(channel: Channel, user: str, self: bool):
+    if self:
+        await channel.send(f"<@!{user}> was confused, and hurt themselves!")
+    else:
+        await channel.send(f"The gods dislike you, {user}. They smite you into oblivion.")
