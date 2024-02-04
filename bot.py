@@ -79,21 +79,13 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User | disco
 @bot.command()
 @has_permissions(manage_permissions=True)
 async def bonk(ctx: Context, member: discord.Member):
-    if not functions.validate_usertype(member, type(discord.Member)):
+    if not functions.validate_usertype(member, discord.Member):
         await ctx.send(f"{member} is an invalid input.")
         return
-    # Restrict user
-    for channel in ctx.guild.text_channels:
-        # Convert member to user role
-        user: discord.User = await bot.fetch_user(member.id)
-        permissions = channel.overwrites_for(user)
-        permissions.update(send_messages=False)
-        await channel.set_permissions(
-            member,
-            overwrite=permissions,
-            reason="Bonk!"
-        )
-    await ctx.send(f"<@!{member.id} has been sent to jail.")
+
+    await customs.restrict(member, ctx.guild, bot)
+
+    await ctx.send(f"<@!{member.id}> has been sent to jail.")
 
 
 @bot.command()
@@ -159,6 +151,22 @@ async def smite(ctx: Context, arg: str | None = None):
 @bot.command()
 async def update(ctx: Context, arg: str | None = None):
     await customs.update(ctx.channel, arg)
+
+
+@bot.command()
+@has_permissions(manage_permissions=True)
+async def unbonk(ctx: Context, member: discord.Member):
+    if not functions.validate_usertype(member, discord.Member):
+        await ctx.send(f"{member} is not a valid input")
+        return
+
+    altered: bool = await customs.unrestrict(member, ctx.guild, bot)
+    if not altered:
+        await ctx.send(f"Looks like I haven't changed that user's permissions at all. No changes needed!")
+        return
+
+    await ctx.send(f"<@!{member.id}> has been released from jail.")
+
 # endregion
 
 
