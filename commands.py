@@ -1,17 +1,14 @@
 """commands.py"""
-import random
 
 # IMPORTS #
 import discord
-from discord import Reaction, User, Member, Guild, Message
+from discord import Reaction, User, Member, Guild, Message, Embed
 from discord.ext.commands import Bot
-
-import json
 
 import constants
 import functions
 
-from typing import List, Dict, Any
+from typing import Dict, Any, List, Tuple
 from types import UnionType
 
 
@@ -23,9 +20,9 @@ Person: UnionType = User | Member
 # LISTEN EVENTS
 async def on_ready(bot: Bot):
     data: Dict[str, Any] = functions.retrieve_guild_data()
-    recent_update: str
-    update: str
-    recent_update, update = functions.retrieve_changelog_update()
+    changelog: Dict[str, Any]
+    latest_key: str
+    changelog, latest_key = functions.retrieve_changelog()
     for guild in bot.guilds:
         # Set up data storage for guild if this is the first time the bot is operational in it, but had
         # already joined
@@ -34,11 +31,12 @@ async def on_ready(bot: Bot):
                 "crateboard": {},
                 "clamboard": {}
             }
-        if recent_update != update:
-            functions.write_to_updated(recent_update)
+        if not changelog[latest_key]["sent"]:
+            changelog[latest_key]["sent"] = True
+            functions.write_to_changelog(changelog)
             channel: discord.TextChannel = guild.system_channel
             await channel.send(
-                f"# NEW UPDATE:\n{functions.format_update(recent_update)}"
+                f"# NEW UPDATE:\n{functions.format_update(changelog[latest_key])}"
             )
     functions.write_to_guild_data(data)
 
@@ -75,6 +73,7 @@ async def on_reaction_add(reaction: Reaction, user: Person):
         await reaction.message.channel.send(constants.REACTION_IMAGES[reaction_name])
 
 
+# CUSTOM COMMANDS
 async def claim(guild: Guild, channel: Channel, author: Person):
     data: Dict[str, Any] = functions.retrieve_claimables_data()
     crate_data: Dict[str, Any] = data['crate']
@@ -90,7 +89,7 @@ async def claim(guild: Guild, channel: Channel, author: Person):
         return
 
     member_info: Member = guild.get_member(author.id)
-    score: int = random.randint(10, 30)
+    score: int = functions.get_random_number(10, 30)
 
     await channel.send(
         f"{member_info.display_name} claimed the crate."
@@ -167,7 +166,110 @@ async def insult(channel: Channel, message: Message, author: Person, user: str):
     # Delete command call for anonymity
     await message.delete()
 
-    chosen_insult: int = random.randint(0, len(constants.INSULTS)-1)
+    chosen_insult: int = functions.get_random_number(0, len(constants.INSULTS)-1)
     insult_message: str = constants.INSULTS[chosen_insult].format(arg=user, arg2=f"<@!{author.id}>")
 
     await channel.send(insult_message)
+
+
+async def meme(channel: Channel):
+    meme_url: str = functions.get_meme()
+    meme_embed: Embed = discord.Embed(title="", description="")
+    meme_embed.set_image(url=meme_url)
+
+    await channel.send(embed=meme_embed)
+
+
+async def recent(channel: Channel):
+    data: Dict[str, Any]
+    latest_key: str
+    data, latest_key = functions.retrieve_changelog()
+
+    await channel.send(functions.format_update(data[latest_key]))
+
+
+# bonk
+async def restrict(member: Member, guild: Guild, bot: Bot):
+    user: User = await bot.fetch_user(member.id)
+    data: Dict[str, Any] = functions.retrieve_guild_data()
+    user_permissions = data[str(guild.id)][str(member.id)] if str(member.id) in data[str(guild.id)].keys() else {}
+
+    for channel in guild.text_channels:
+        channel_permissions = user_permissions[str(channel.id)] if str(channel.id) in user_permissions.keys() else {}
+        permissions = channel.overwrites_for(user)
+        # Only apply restriction on channels they could send messages in before
+        # This is important so the bot doesn't grant send_message permissions to all channels for that user later
+        if permissions.send_messages:
+            permissions.update(send_messages=False)
+            channel_permissions["sendMessages"] = False
+        user_permissions[str(channel.id)] = channel_permissions
+        await channel.set_permissions(
+            member,
+            overwrite=permissions,
+            reason="Bonk!"
+        )
+
+    data[str(guild.id)][str(member.id)] = user_permissions
+    functions.write_to_guild_data(data)
+
+
+async def smite(channel: Channel, user: str, self: bool):
+    if self:
+        await channel.send(f"<@!{user}> was confused, and hurt themselves!")
+    else:
+        await channel.send(f"The gods dislike you, {user}. They smite you into oblivion.")
+
+
+async def unrestrict(member: Member, guild: Guild, bot: Bot) -> bool:
+    user: User = await bot.fetch_user(member.id)
+    data: Dict[str, Any] = functions.retrieve_guild_data()
+    user_permissions = data[str(guild.id)][str(member.id)] if str(member.id) in data[str(guild.id)].keys() else {}
+    if len(user_permissions.keys()) < 1:
+        return False
+
+    altered = False
+    for channel in guild.text_channels:
+        channel_permissions = user_permissions[str(channel.id)] if str(channel.id) in user_permissions.keys() else {}
+        send_messages = channel_permissions["sendMessages"] if "sendMessages" in channel_permissions.keys() else None
+        if send_messages is None:
+            continue
+        permissions = channel.overwrites_for(user)
+
+        if not send_messages and not permissions.send_messages:
+            permissions.update(send_messages=True)
+            channel_permissions["sendMessages"] = True
+            altered = True
+        else:  # We don't care about not restricting, so remove from guild data
+            try:
+                channel_permissions.pop("sendMessages")  # Remove bot settings as manual takes precedence
+            except KeyError:
+                pass  # Doesn't exist so we don't care
+
+        user_permissions[str(channel.id)] = channel_permissions
+        await channel.set_permissions(
+            member,
+            overwrite=permissions,
+            reason="Unbonk!"
+        )
+
+    data[str(guild.id)][str(member.id)] = user_permissions
+    functions.write_to_guild_data(data)
+    return altered
+
+
+async def update(channel: Channel, version: str | None):
+    if version is None:
+        await recent(channel)
+        return
+
+    data: Dict[str, Any]
+    data, _ = functions.retrieve_changelog()
+    # Get the update versions in a list
+    titles: List[Tuple[str, str]] = [(key, item['title']) for key, item in data.items()]
+    # Check for likeness with user input
+    key: str = functions.find_title(version, titles)
+    if key == "-1":
+        await channel.send("Hmm, I couldn't find a version like that!")
+        return
+
+    await channel.send(functions.format_update(data[key]))

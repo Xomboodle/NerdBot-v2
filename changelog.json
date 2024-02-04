@@ -1,0 +1,235 @@
+{
+  "0": {
+    "title": "V.0.1.0 - The Creation Update",
+    "content": {
+      "subtext": "The first major update to the bot!",
+      "items": {
+        "0": "Created bot. Woop!",
+        "1": "Added new `insult` command, to anger your friends anonymously.",
+        "2": "Added `help` command, for when you're lost.",
+        "3": "Added `smite` command, cause why not.",
+        "4": "Added bot activity."
+      }
+    },
+    "sent": true
+  },
+  "1": {
+    "title": "V.0.2.0 - The Permanence Update",
+    "content": {
+      "subtext": "The second major update. This brought in the permanent uptime of the bot.",
+      "items": {
+        "0": "Relocated bot to a place of hardcore training. Now it will never rest. Most of the time.",
+        "1": "Some internal changes to how the changelog is accessed.",
+        "2": "Added trigger words in regular messages."
+      }
+    },
+    "sent": true
+  },
+  "2": {
+    "title": "V.0.3.0 - The Gambler's Update",
+    "content": {
+      "subtext": "Brings in a host of gambling-related additions to the bot. No real money involved.",
+      "items": {
+        "0": "Added `diceroll` and `card` commands, for some gambling fun.",
+        "1": "Added `rps` command. Rock, paper, scissors has never been better (it probably has).",
+        "2": "Added leaderboard. Now you can see who's better at winning (or losing) money.",
+        "3": "Added (fake) currency. Everybody starts with 10 coins.",
+        "4": "Integrated currency gambling into the rps command.",
+        "5": "Altered betting so you can't bet more than you have.",
+        "6": "Altered losses so you'll always have at least something to bet.",
+        "7": "Added loot crates, for that chance to get a little extra worthless cash.",
+        "8": "Fixed `rps` command not invalidating words as amounts to gamble.",
+        "9": "Altered leaderboard mechanics to access user IDs instead of their nicknames.",
+        "10": "Broke every gambling related command.",
+        "11": "Fixed every gambling related command.",
+        "12": "Fixed loot crates giving multiple rewards per crate.",
+        "13": "Introduced limit to number of dice rolls (max is now 10).",
+        "14": "Redesigned the output of `card` and `diceroll` commands.",
+        "15": "`diceroll` command now displays total of all rolls.",
+        "16": "Added checks to `diceroll` command so those pesky QA testers can't break it with their fangled words.",
+        "17": "Added reaction to poop reactions. Toilet humour is funny.",
+        "18": "Added `recent` command to see the absolute latest addition.",
+        "19": "Added automatic call to `recent` on bot startup. Just like this!"
+      }
+    },
+    "sent": true
+  },
+  "3": {
+    "title": "V.0.4.0 - The Meme Update",
+    "content": {
+      "subtext": "Some memes and moderation is added in this fourth major update.",
+      "items": {
+        "0": "Changed reaction to poop emoji to be more suitable.",
+        "1": "Added bot reactions to various emoji reactions (custom emojis included).",
+        "2": "Added `coins` command to check your own coin balance from gambling.",
+        "3": "Updated `help` command to display both the `recent` command and `coins` command.",
+        "4": "Fixed automatic update message displaying even when there wasn't a new update.",
+        "5": "Added `meme` command. It wouldn't be a meme update without memes.",
+        "6": "Updated `help` command to display `meme` command.",
+        "7": "Added bot reactions to all custom emojis. Have fun.",
+        "8": "Added new insults to the `insult` command. Now you can roast your friends even more creatively.",
+        "9": "Added bonk and unbonk command. When the peasants begin to revolt, throw 'em in a cell. Can only be used by someone with Manage Permissions.",
+        "10": "Added clams. Claim the clams if you find a clam to claim. Legit or quit."
+      }
+    },
+    "sent": true
+  },
+  "4": {
+    "title": "V.0.5.0 - The Adventure Update",
+    "content": {
+      "subtext": "This update brings the opportunity to start adventures. Make a character and send them on quests, \ncollecting cool items and gaining xp to level them up as you go. More additions will be added to\nthis system in future updates.",
+      "items": {
+        "0": "Added `start` command to make your character.",
+        "1": "Added `profile` command to view your character.",
+        "2": "Added `adventure` command to send your character on quests for xp (loot will be added in the future)",
+        "3": "Removed `card` and `diceroll` commands, due to unpopular demand.",
+        "4": "Added more insults to the insult list. Roast each other to your heart's content.",
+        "5": "Updated `help` command accordingly.",
+        "6": "Altered visuals of help command, for easier reading."
+      }
+    }
+  },
+  "5": {
+    "title": "V.0.5.1",
+    "content": {
+      "subtext": "",
+      "items": {
+        "0": "Fixed issue with character profiles overwriting each other.",
+        "1": "Deleted any profiles so the fix can be implemented."
+      }
+    },
+    "sent": true
+  },
+  "6": {
+    "title": "V.0.5.1.1",
+    "content": {
+      "subtext": "",
+      "items": {
+        "0": "Fixed issue with timeout on character creation not working.",
+        "1": "Actually fixed issue with character profiles overwriting each other."
+      }
+    },
+    "sent": true
+  },
+  "7": {
+    "title": "V.0.5.2",
+    "content": {
+      "subtext": "",
+      "items": {
+        "0": "Rewritten the bot to improve some of the spaghet it ran on.",
+        "1": "Implemented some spam prevention on the bot's reactions to your reactions.",
+        "2": "Temporarily removed the ability to go on adventures while it gets fixed. The monsters are on holiday."
+      }
+    },
+    "sent": true
+  },
+  "8": {
+    "title": "V.0.5.3",
+    "content": {
+      "subtext": "This update has been a too long a time coming. A lot of background stuff has been updated,\nsuch as readability within the bot's code. A few additional changes have been made,\nlisted here. There will likely be more bugfixes over time, as there is only so much I\ncan test on my own.\nThe actual adventurey part of the Adventure Update (V0.5) is still in the tool shop, but\nnow that I can read my own code again, and I've discovered the wonders of JSON, it may be\nreturning soon.",
+      "items": {
+        "0": "Leaderboard now utilises JSON file to store scores.",
+        "1": "`leaderboard` command renamed to `highscore`",
+        "2": "Scores on leaderboard have been reset. Say goodbye to your great fortunes.",
+        "3": "Christmas bot theme removed (part of an invisible update)",
+        "4": "Bot activity updated.",
+        "5": "Crate message now updates when the crate is claimed."
+      }
+    },
+    "sent": true
+  },
+  "9": {
+    "title": "V.0.5.4 - Adventure Update 2 Electric Boogaloo",
+    "content": {
+      "subtext": "At long last, the adventure update is back, with new and improved\neverything (I hope). This update brings back the adventuring commands,\nwith a much better backend to support it. Also, bugfixes, because I hate bugs.",
+      "items": {
+        "0": "Added `start` command, to create character.",
+        "1": "Added `end` command, to delete character.",
+        "2": "Added `profile` command, to view character.",
+        "3": "Added `battle` command, to go on quests.",
+        "4": "Added `helprpg` command, to view the adventuring commands' help.",
+        "5": "Updated `help` command to include `helprpg`.",
+        "6": "Fixed crate claiming message not always working.",
+        "7": "Fixed issue with some user reactions not triggering bot reactions.",
+        "8": "Fixed typos in help command."
+      }
+    },
+    "sent": true
+  },
+  "10": {
+    "title": "V.0.5.5",
+    "content": {
+      "subtext": "This update provides some multi-server compatibility.",
+      "items": {
+        "0": "Given NerdBot the ability to send update messages to all servers it is in.",
+        "1": "Provided NerdBot with services required for server-specific commands.",
+        "2": "Updated highscore so that it will display your username if you don't have a nickname in the server you access it from."
+      }
+    },
+    "sent": true
+  },
+  "11": {
+    "title": "V.0.5.5.1",
+    "content": {
+      "subtext": "Some bugfixes.",
+      "items": {
+        "0": "Fixed specified default emojis not having bot reactions.",
+        "1": "Fixed `highscore` displaying scores in reverse order.",
+        "2": "Fixed typo in the `helprpg` command's embed.",
+        "3": "Fixed `highscore` breaking on servers that don't have every person ever in.",
+        "4": "Fixed crate and clam not displaying claimer's name if they don't have a nickname."
+      }
+    },
+    "sent": true
+  },
+  "12": {
+    "title": "V.0.5.6",
+    "content": {
+      "subtext": "More bugfixes and adjustments.",
+      "items": {
+        "0": "Fixed `battle` command not working due to incorrect usage of dictionary.",
+        "1": "Fixed typo in `smite` command's message.",
+        "2": "Reduced minimum number of enemies that can be fought with the battle command to give lower level characters slightly increased odds of winning."
+      }
+    },
+    "sent": true
+  },
+  "13": {
+    "title": "V.0.5.7",
+    "content": {
+      "subtext": "Challenge accepted.",
+      "items": {
+        "0": "Added `backflip` command."
+      }
+    },
+    "sent": true
+  },
+  "14": {
+    "title": "V.0.6.0 - The Why Not? Update",
+    "content": {
+      "subtext": "Time to add features just because I feel like it.",
+      "items": {
+        "0": "Added Inspirobot to Nerdbot. Just use the words \"inspire me\" in your message.",
+        "1": "Allowed Nerdbot to choose to do backflips if they see the word \"backflip\" in a message.",
+        "2": "Nerdbot now responds to their name being used in passing."
+      }
+    },
+    "sent": true
+  },
+  "15": {
+    "title": "V.1.0 - The Big Reveal",
+    "content": {
+      "subtext": "A whole host of big changes have happened, deeming NerdBot officially in its 1.0 status!\nLet's take a look at them.",
+      "items":  {
+        "0": "Redesigned changelog messages. All shiny and formatted.",
+        "1": "Updated the crate/clam spawning. Smoother separation of server spawns and a timer, so they don't spawn too often. Completely spam-proof.",
+        "2": "Begun storing data specific to a guild (server) separate from within the code, so it carries across bot restarts.",
+        "3": "Clam messages now update like crates do, when clams are claimed. They also have their own score and leaderboard!",
+        "4": "Added `clams` command. Now you can see how many clams you've collected!",
+        "5": "Altered the `update` command. Now you can search for a specific bot version's changelog!",
+        "6": "The `bonk`/`unbonk` commands now remember which channels they've affected. They also won't overwrite manual permission changes."
+      }
+    },
+    "sent": false
+  }
+}

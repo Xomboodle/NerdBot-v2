@@ -74,8 +74,8 @@ def generate_help_embed(prefix: str) -> Embed:
         value="```Release a user from jail. Requires Manages Permissions.```"
     )
     help_embed.add_field(
-        name="update",
-        value="```See a bunch of more recent updates in one long, horrible list.```"
+        name="update <version>",
+        value="```See any update of your choosing. Enter a version, and Nerdbot will try to find the closest result.```"
     )
 
     return help_embed
