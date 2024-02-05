@@ -11,7 +11,7 @@ def generate_help_embed(prefix: str) -> Embed:
     )
     help_embed.add_field(
         name="bonk <user>",
-        value="```Send a user to jail. Requires Manages Permissions to use.```"
+        value="```See mute command.```"
     )
     help_embed.add_field(
         name="claim",
@@ -50,12 +50,12 @@ def generate_help_embed(prefix: str) -> Embed:
         value="```Displays a meme from r/memes.```"
     )
     help_embed.add_field(
-        name="recent",
-        value="```Check the most recent update the bot has, in case you missed it.```"
+        name="mute <user>",
+        value="```Send a user to jail. Requires Manages Permissions to use.```"
     )
     help_embed.add_field(
-        name="helprpg",
-        value="```View commands related to adventuring.```"
+        name="recent",
+        value="```Check the most recent update the bot has, in case you missed it.```"
     )
     help_embed.add_field(
         name="rps <option[rock,paper,scissors]> <bet>",
@@ -71,6 +71,10 @@ def generate_help_embed(prefix: str) -> Embed:
     )
     help_embed.add_field(
         name="unbonk <user>",
+        value="```See unmute command```"
+    )
+    help_embed.add_field(
+        name="unmute <user>",
         value="```Release a user from jail. Requires Manages Permissions.```"
     )
     help_embed.add_field(

@@ -76,7 +76,7 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User | disco
 
 
 # region User Commands
-@bot.command()
+@bot.command(aliases=['mute'])
 @has_permissions(manage_permissions=True)
 async def bonk(ctx: Context, member: discord.Member):
     if not functions.validate_usertype(member, discord.Member):
@@ -153,7 +153,7 @@ async def update(ctx: Context, arg: str | None = None):
     await customs.update(ctx.channel, arg)
 
 
-@bot.command()
+@bot.command(aliases=['unmute'])
 @has_permissions(manage_permissions=True)
 async def unbonk(ctx: Context, member: discord.Member):
     if not functions.validate_usertype(member, discord.Member):

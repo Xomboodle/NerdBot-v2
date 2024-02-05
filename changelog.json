@@ -227,7 +227,9 @@
         "3": "Clam messages now update like crates do, when clams are claimed. They also have their own score and leaderboard!",
         "4": "Added `clams` command. Now you can see how many clams you've collected!",
         "5": "Altered the `update` command. Now you can search for a specific bot version's changelog!",
-        "6": "The `bonk`/`unbonk` commands now remember which channels they've affected. They also won't overwrite manual permission changes."
+        "6": "The `bonk`/`unbonk` commands now remember which channels they've affected. They also won't overwrite manual permission changes.",
+        "7": "For more professional sounding reasons, also added `mute`/`unmute` commands.",
+        "8": "Migrated to another server host. Now Nerdbot should be even more permanently annoying >:)"
       }
     },
     "sent": false
