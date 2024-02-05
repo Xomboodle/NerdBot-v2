@@ -32,12 +32,12 @@ async def on_ready(bot: Bot):
                 "clamboard": {}
             }
         if not changelog[latest_key]["sent"]:
-            changelog[latest_key]["sent"] = True
             functions.write_to_changelog(changelog)
             channel: discord.TextChannel = guild.system_channel
             await channel.send(
                 f"# NEW UPDATE:\n{functions.format_update(changelog[latest_key])}"
             )
+    changelog[latest_key]["sent"] = True
     functions.write_to_guild_data(data)
 
 
