@@ -50,12 +50,12 @@ def add_guild(guild_id: int) -> Error:
                              "SET Active = 1 "
                              "WHERE GuildID = %(guildId)s")
 
-    q_add_guild_id_to_tables = ("INSERT "
-                                "INTO GUILD_COINS (GuildID) "
-                                "VALUES (%(guildId)s); "
-                                "INSERT "
-                                "INTO GUILD_CLAMS (GuildID) "
-                                "VALUES (%(guildId)s);")
+    q_add_guild_id_to_coins = ("INSERT "
+                               "INTO GUILD_COINS (GuildID) "
+                               "VALUES (%(guildId)s)")
+    q_add_guild_id_to_clams = ("INSERT "
+                               "INTO GUILD_CLAMS (GuildID) "
+                               "VALUES (%(guildId)s)")
 
     with cnx.cursor() as cursor:
         try:
@@ -65,7 +65,9 @@ def add_guild(guild_id: int) -> Error:
             if check_guild_exists == 1:
                 cursor.execute(q_update_guild_active, params)
                 cnx.commit()
-                cursor.execute(q_add_guild_id_to_tables, params)
+                cursor.execute(q_add_guild_id_to_coins, params)
+                cnx.commit()
+                cursor.execute(q_add_guild_id_to_clams, params)
                 cnx.commit()
             else:
                 cursor.execute(q_insert_new_guild, params)
@@ -134,7 +136,7 @@ def set_guild_changelog_version(guild_id: int, version: int) -> Error:
     return response
 
 
-def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | Error:
+def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | None | Error:
     cnx: PartialConnection = create_connection()
     if isinstance(cnx, Error):
         return cnx
@@ -152,7 +154,7 @@ def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | Error:
                              "FROM GUILD_CLAM "
                              "WHERE GuildID = %(guildId)s")
     else:
-        return Error(ErrorType.InvalidArgument, "Invalid argument for claimable type.")
+        return Error(ErrorType.InvalidArgument, "Invalid argument for claimable.")
 
     with cnx.cursor() as cursor:
         try:
@@ -166,3 +168,37 @@ def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | Error:
 
     return response
 
+
+def set_last_caught(guild_id: int, claimable: Claimable, time: datetime) -> Error:
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        'guildId': guild_id,
+        'time': time
+    }
+
+    if claimable == Claimable.Coin:
+        q_set_last_caught = ("UPDATE GUILD_COINS "
+                             "SET LastCaught = %(time)s "
+                             "WHERE GuildID = %(guildId)s")
+    elif claimable == Claimable.Clam:
+        q_set_last_caught = ("UPDATE GUILD_CLAM "
+                             "SET LastCaught = %(time)s "
+                             "WHERE GuildID = %(guildId)s")
+    else:
+        return Error(ErrorType.InvalidArgument, "Invalid argument for claimable.")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_set_last_caught, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
