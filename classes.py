@@ -19,6 +19,6 @@ class Error:
 
     def log(self):
         if type(self.Status) == WarningType:
-            logging.warning(self.Message)
+            logging.warning(f"{self.Status.name}: {self.Message}")
         elif type(self.Status) == ErrorType:
-            logging.error(self.Message)
+            logging.error(f"{self.Status.name}: {self.Message}")
