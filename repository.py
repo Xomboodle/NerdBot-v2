@@ -1,18 +1,19 @@
 """repository.py"""
+from datetime import datetime
 import os
-import logging
 from typing import Any
 
 import mysql.connector
-from mysql.connector import MySQLConnection, Error
+from mysql.connector import MySQLConnection
 from mysql.connector.pooling import PooledMySQLConnection
+
+from enums import Claimable, ErrorType, WarningType
+from classes import Error
 
 from types import UnionType
 
 Connection: UnionType = MySQLConnection | PooledMySQLConnection
-PartialConnection: UnionType = Connection | None
-
-logging.basicConfig(format='%(levelname)s @ %(asctime)s - %(message)s', datefmt='%d/%m/%Y %H:%M:%S', level=logging.INFO)
+PartialConnection: UnionType = Connection | Error
 
 
 def create_connection() -> PartialConnection:
@@ -25,15 +26,13 @@ def create_connection() -> PartialConnection:
     if connection and connection.is_connected():
         return connection
     else:
-        logging.warning("Failed to connect to database")
-        return None
+        return Error(WarningType.BadConnection, "Failed to connect to database.")
 
 
-def add_guild(guild_id: int) -> bool:
-    logging.info("Entered function add_guild")
+def add_guild(guild_id: int) -> Error:
     cnx: PartialConnection = create_connection()
-    if cnx is None:
-        return False
+    if isinstance(cnx, Error):
+        return cnx
 
     params = {
         'guildId': guild_id
@@ -41,7 +40,7 @@ def add_guild(guild_id: int) -> bool:
 
     q_select_guild_exists = ("SELECT 1 "
                              "FROM GUILDS "
-                             f"WHERE GuildID = %(guildId)s")
+                             "WHERE GuildID = %(guildId)s")
 
     q_insert_new_guild = ("INSERT "
                           "INTO GUILDS (GuildID, Active) "
@@ -51,6 +50,13 @@ def add_guild(guild_id: int) -> bool:
                              "SET Active = 1 "
                              "WHERE GuildID = %(guildId)s")
 
+    q_add_guild_id_to_tables = ("INSERT "
+                                "INTO GUILD_COINS (GuildID) "
+                                "VALUES (%(guildId)s); "
+                                "INSERT "
+                                "INTO GUILD_CLAMS (GuildID) "
+                                "VALUES (%(guildId)s);")
+
     with cnx.cursor() as cursor:
         try:
             cursor.execute(q_select_guild_exists, params)
@@ -59,24 +65,25 @@ def add_guild(guild_id: int) -> bool:
             if check_guild_exists == 1:
                 cursor.execute(q_update_guild_active, params)
                 cnx.commit()
+                cursor.execute(q_add_guild_id_to_tables, params)
+                cnx.commit()
             else:
                 cursor.execute(q_insert_new_guild, params)
                 cnx.commit()
-        except Error as error:
-            logging.error(error)
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
         finally:
             cursor.close()
             cnx.close()
 
-    logging.info("Exiting function add_guild")
-    return True
+    return response
 
 
-def get_guild_changelog_version(guild_id: int) -> int | None:
-    logging.info("Entered function set_guild_changelog_version")
+def get_guild_changelog_version(guild_id: int) -> int | Error:
     cnx: PartialConnection = create_connection()
-    if cnx is None:
-        return None
+    if isinstance(cnx, Error):
+        return cnx
 
     params = {
         'guildId': guild_id
@@ -89,22 +96,20 @@ def get_guild_changelog_version(guild_id: int) -> int | None:
     with cnx.cursor() as cursor:
         try:
             cursor.execute(q_get_guild_changelog_version, params)
-            version: Any = cursor.fetchone()
-        except Error as error:
-            logging.error(error)
+            response: Any = cursor.fetchone()
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
         finally:
             cursor.close()
             cnx.close()
 
-    logging.info("Exiting function set_guild_changelog_version")
-    return version
+    return response
 
 
-def set_guild_changelog_version(guild_id: int, version: int) -> bool:
-    logging.info("Entered function set_guild_changelog_version")
+def set_guild_changelog_version(guild_id: int, version: int) -> Error:
     cnx: PartialConnection = create_connection()
-    if cnx is None:
-        return False
+    if isinstance(cnx, Error):
+        return cnx
 
     params = {
         'version': version,
@@ -119,11 +124,45 @@ def set_guild_changelog_version(guild_id: int, version: int) -> bool:
         try:
             cursor.execute(q_set_guild_changelog_version, params)
             cnx.commit()
-        except Error as error:
-            logging.error(error)
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
         finally:
             cursor.close()
             cnx.close()
 
-    logging.info("Exiting function set_guild_changelog_version")
-    return True
+    return response
+
+
+def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | Error:
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        'guildId': guild_id
+    }
+
+    if claimable == Claimable.Coin:
+        q_get_last_caught = ("SELECT LastCaught "
+                             "FROM GUILD_COINS "
+                             "WHERE GuildID = %(guildId)s")
+    elif claimable == Claimable.Clam:
+        q_get_last_caught = ("SELECT LastCaught "
+                             "FROM GUILD_CLAM "
+                             "WHERE GuildID = %(guildId)s")
+    else:
+        return Error(ErrorType.InvalidArgument, "Invalid argument for claimable type.")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_get_last_caught, params)
+            response: Any = cursor.fetchone()
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
