@@ -1,3 +1,5 @@
+<p align="center"><img src="https://github.com/Xomboodle/NerdBot-v2/blob/master/nerdbot.png" width=256/></p>
+
 # NERDBOT 2.0
 
 Yes that's right, there's already one of these.
@@ -21,8 +23,10 @@ to help with server engagement, it has a number of features already, such as:
 - A mute tool, for those server members that get just a bit too annoying in chat
 - And many more to come!
 
-As of 6th Jan 2024, Nerdbot 2.0 is still under development, and not released to
-the wide world.
+As of 5th Feb 2024, Nerdbot 2 officially went online in a select number of servers. It is
+currently utilising JSON files as storage, but with its new host home, this will be steadily
+migrated over to using a MySQL database for better data storage. Work for this is currently
+ongoing.
 
 ### What about the old Nerdbot?
 
