@@ -233,5 +233,17 @@
       }
     },
     "sent": true
+  },
+  "16": {
+    "title": "V.1.0.1",
+    "content": {
+      "subtext": "A few small bugfixes.",
+      "items": {
+        "0": "Reset prefix to `!`. Now the claiming messages make sense.",
+        "1": "Resolved some issues with the changelog system.",
+        "2": "Fixed issue where Nerdy would occasionally not respond to its name."
+      }
+    },
+    "sent": false
   }
 }
