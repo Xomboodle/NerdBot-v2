@@ -297,7 +297,7 @@ def get_meme() -> str:
 
 def find_title(version: str, titles: List[Tuple[str, str]]) -> str:
     for title in titles:
-        if re.search(version, title[1]) is not None:
+        if re.search(version.lower(), title[1].lower()) is not None:
             return title[0]
     else:
         return "-1"
