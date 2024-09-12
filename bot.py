@@ -37,7 +37,7 @@ intents = discord.Intents.all()
 activity = discord.Activity(type=discord.ActivityType.playing,
                             name="you for a fool")
 # The bot
-bot = commands.Bot(command_prefix='?', activity=activity,
+bot = commands.Bot(command_prefix='!', activity=activity,
                    help_command=None, intents=intents)
 
 # Uses command prefix, so needs that set first

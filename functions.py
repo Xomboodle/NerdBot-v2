@@ -169,7 +169,7 @@ async def respond_to_message(channel: TextChannel | Thread, content: str, bot: B
         inspiration = inspirobot.generate()
         await channel.send(inspiration.url)
     elif bot.command_prefix == content or re.findall('nerdbot', content):
-        response: str = constants.NERD_RESPONSES[random.randint(0, len(constants.NERD_RESPONSES))]
+        response: str = constants.NERD_RESPONSES[random.randint(0, len(constants.NERD_RESPONSES)-1)]
         await channel.send(response)
 
 
@@ -297,7 +297,7 @@ def get_meme() -> str:
 
 def find_title(version: str, titles: List[Tuple[str, str]]) -> str:
     for title in titles:
-        if re.search(version, title[1]) is not None:
+        if re.search(version.lower(), title[1].lower()) is not None:
             return title[0]
     else:
         return "-1"
