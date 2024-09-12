@@ -6,6 +6,7 @@ from typing import Any
 import mysql.connector
 from mysql.connector import MySQLConnection
 from mysql.connector.pooling import PooledMySQLConnection
+from mysql.connector.cursor import MySQLCursor
 
 from enums import Claimable, ErrorType, WarningType
 from classes import Error
@@ -303,6 +304,117 @@ def set_last_caught(guild_id: int, claimable: Claimable, time: datetime) -> Erro
     with cnx.cursor() as cursor:
         try:
             cursor.execute(q_set_last_caught, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+# Internal use only
+def insert_user(user_id: int, cnx: PartialConnection, cursor: MySQLCursor) -> Error:
+    params = {
+        "userId": user_id
+    }
+
+    q_insert_user = ("INSERT "
+                     "INTO USERS (UserId)"
+                     "VALUES (%(userId)s)")
+
+    try:
+        cursor.execute(q_insert_user, params)
+        cnx.commit()
+        response = Error(ErrorType.NoError)
+    except mysql.connector.Error as error:
+        response = Error(ErrorType.MySqlException, error.msg)
+
+    return response
+
+
+def get_user_score(user_id: int, claimable: Claimable) -> int | Error:
+    """
+    Gets the individual user's score for a particular claimable.
+    :param user_id: The ID of the user.
+    :param claimable: The type of claimable.
+    :return: The score for the user.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "userId": user_id
+    }
+
+    q_select_user = ("SELECT 1 "
+                     "FROM USERS "
+                     "WHERE UserId = %(userId)s")
+
+    q_get_user_coin_score = ("SELECT CoinsCaught "
+                             "FROM USERS "
+                             "WHERE UserId = %(userId)s")
+
+    q_get_user_clam_score = ("SELECT ClamsCaught "
+                             "FROM USERS "
+                             "WHERE UserId = %(userId)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_select_user, params)
+            user_exists = cursor.fetchone()
+            if user_exists != 1:
+                new_user_response = insert_user(user_id, cnx, cursor)
+                response = 0 if new_user_response.Status == ErrorType.NoError else new_user_response
+            else:
+                if claimable == Claimable.Clam:
+                    cursor.execute(q_get_user_clam_score, params)
+                elif claimable == Claimable.Coin:
+                    cursor.execute(q_get_user_coin_score, params)
+
+                response = cursor.fetchone()
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def set_user_score(user_id: int, score: int, claimable: Claimable) -> Error:
+    """
+    Sets the user's score for a particular claimable.
+    :param user_id: The user's ID.
+    :param score: The score to set.
+    :param claimable: The type of claimable.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "userId": user_id,
+        "score": score
+    }
+
+    q_update_coin_score = ("UPDATE USERS "
+                           "SET CoinsCaught = %(score)s "
+                           "WHERE UserId = %(userId)s")
+
+    q_update_clam_score = ("UPDATE USERS "
+                           "SET ClamsCaught = %(score)s "
+                           "WHERE UserId = %(userId)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            if claimable == Claimable.Clam:
+                cursor.execute(q_update_clam_score, params)
+            elif claimable == Claimable.Coin:
+                cursor.execute(q_update_coin_score, params)
             cnx.commit()
             response = Error(ErrorType.NoError)
         except mysql.connector.Error as error:

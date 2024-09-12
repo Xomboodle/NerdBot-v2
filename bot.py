@@ -3,6 +3,8 @@
 # IMPORTS #
 import os
 
+from types import UnionType
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions
@@ -18,6 +20,8 @@ import functions
 
 import embeds
 
+
+DefaultInput: UnionType = str | None
 # Set the variables in .env file as environment variables
 load_dotenv()
 
@@ -78,9 +82,13 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User | disco
 # region User Commands
 @bot.command(aliases=['mute'])
 @has_permissions(manage_permissions=True)
-async def bonk(ctx: Context, member: discord.Member):
+async def bonk(ctx: Context, member: discord.Member | DefaultInput):
+    if member is None:
+        await ctx.send("No input given!")
+        return
+
     if not functions.validate_usertype(member, discord.Member):
-        await ctx.send(f"{member} is an invalid input.")
+        await ctx.send(f"{member} is not a valid input")
         return
 
     await customs.restrict(member, ctx.guild, bot)
@@ -124,7 +132,7 @@ async def highscore(ctx: Context):
 
 
 @bot.command()
-async def insult(ctx: Context, arg: str | None = None):
+async def insult(ctx: Context, arg: DefaultInput = None):
     if arg is None:
         await ctx.channel.send("At least choose someone to insult!")
         return
@@ -142,20 +150,24 @@ async def recent(ctx: Context):
 
 
 @bot.command()
-async def smite(ctx: Context, arg: str | None = None):
+async def smite(ctx: Context, arg: DefaultInput = None):
     self: bool = True if arg is None else False
     user: str = arg if not self else str(ctx.message.author.id)
     await customs.smite(ctx.channel, user, self)
 
 
 @bot.command()
-async def update(ctx: Context, arg: str | None = None):
+async def update(ctx: Context, arg: DefaultInput = None):
     await customs.update(ctx.channel, arg)
 
 
 @bot.command(aliases=['unmute'])
 @has_permissions(manage_permissions=True)
-async def unbonk(ctx: Context, member: discord.Member):
+async def unbonk(ctx: Context, member: discord.Member | DefaultInput):
+    if member is None:
+        await ctx.send("No input given!")
+        return
+
     if not functions.validate_usertype(member, discord.Member):
         await ctx.send(f"{member} is not a valid input")
         return
