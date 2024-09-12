@@ -17,6 +17,11 @@ PartialConnection: UnionType = Connection | Error
 
 
 def create_connection() -> PartialConnection:
+    """
+    Establishes connection to database. Must be called at the start of every other function in this file.
+    Requires valid environment variables or the connection will fail.
+    :return: A connection object.
+    """
     connection: Connection = mysql.connector.connect(
         host=os.environ.get('HOST'),
         user=os.environ.get('DBUSER'),
@@ -29,7 +34,37 @@ def create_connection() -> PartialConnection:
         return Error(WarningType.BadConnection, "Failed to connect to database.")
 
 
-def add_guild(guild_id: int) -> Error:
+def get_all_guild_ids() -> list[int] | Error:
+    """
+    Retrieves all current guild IDs.
+    :return: A list of guild IDs.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    q_select_all_guild_ids = ("SELECT GuildId "
+                              "FROM GUILDS")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_select_all_guild_ids)
+
+            response: Any = cursor.fetchall()
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def set_active_guild(guild_id: int) -> Error:
+    """
+    Sets a guild to active.
+    :param guild_id: The ID of the guild.
+    """
     cnx: PartialConnection = create_connection()
     if isinstance(cnx, Error):
         return cnx
@@ -38,40 +73,93 @@ def add_guild(guild_id: int) -> Error:
         'guildId': guild_id
     }
 
-    q_select_guild_exists = ("SELECT 1 "
-                             "FROM GUILDS "
-                             "WHERE GuildID = %(guildId)s")
-
-    q_insert_new_guild = ("INSERT "
-                          "INTO GUILDS (GuildID, Active) "
-                          "VALUES (%(guildId)s, 1)")
-
     q_update_guild_active = ("UPDATE GUILDS "
                              "SET Active = 1 "
-                             "WHERE GuildID = %(guildId)s")
-
-    q_add_guild_id_to_coins = ("INSERT "
-                               "INTO GUILD_COINS (GuildID) "
-                               "VALUES (%(guildId)s)")
-    q_add_guild_id_to_clams = ("INSERT "
-                               "INTO GUILD_CLAMS (GuildID) "
-                               "VALUES (%(guildId)s)")
+                             "WHERE GuildId = %(guildId)s")
 
     with cnx.cursor() as cursor:
         try:
-            cursor.execute(q_select_guild_exists, params)
+            cursor.execute(q_update_guild_active, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
 
-            check_guild_exists: Any = cursor.fetchone()
-            if check_guild_exists == 1:
-                cursor.execute(q_update_guild_active, params)
-                cnx.commit()
-                cursor.execute(q_add_guild_id_to_coins, params)
-                cnx.commit()
-                cursor.execute(q_add_guild_id_to_clams, params)
-                cnx.commit()
-            else:
-                cursor.execute(q_insert_new_guild, params)
-                cnx.commit()
+    return response
+
+
+def set_inactive_guild(guild_id: int) -> Error:
+    """
+    Sets a guild to inactive.
+    :param guild_id: The ID of the guild.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        'guildId': guild_id
+    }
+
+    q_update_guild_active = ("UPDATE GUILDS "
+                             "SET Active = 0 "
+                             "WHERE GuildId = %(guildId)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_update_guild_active, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def add_guild(guild_id: int) -> Error:
+    """
+    Add a new guild to the database.
+    :param guild_id: The ID of the guild to add
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        'guildId': guild_id
+    }
+
+    q_insert_new_guild = ("INSERT "
+                          "INTO GUILDS (GuildId, Active) "
+                          "VALUES (%(guildId)s, 1)")
+
+    q_add_guild_id_to_coins = ("INSERT "
+                               "INTO GUILD_COINS (GuildID, LastCaught, Total) "
+                               "SELECT %(guildId)s AS GuildId, CURRENT_DATE() AS LastCaught, 0 AS Total "
+                               "FROM GUILD_COINS "
+                               "WHERE (GuildId=%(guildId)s "
+                               "HAVING COUNT(*)=0")
+    q_add_guild_id_to_clams = ("INSERT "
+                               "INTO GUILD_CLAMS (GuildID, LastCaught, Total) "
+                               "SELECT %(guildId)s AS GuildId, CURRENT_DATE() AS LastCaught, 0 AS Total "
+                               "FROM GUILD_CLAMS "
+                               "WHERE (GuildId=%(guildId)s "
+                               "HAVING COUNT(*)=0")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_insert_new_guild, params)
+            cnx.commit()
+            cursor.execute(q_add_guild_id_to_coins, params)
+            cnx.commit()
+            cursor.execute(q_add_guild_id_to_clams, params)
+            cnx.commit()
             response = Error(ErrorType.NoError)
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
@@ -83,6 +171,11 @@ def add_guild(guild_id: int) -> Error:
 
 
 def get_guild_changelog_version(guild_id: int) -> int | Error:
+    """
+    Gets the latest changelog version released to a guild.
+    :param guild_id: The guild ID.
+    :return: The changelog index.
+    """
     cnx: PartialConnection = create_connection()
     if isinstance(cnx, Error):
         return cnx
@@ -109,6 +202,11 @@ def get_guild_changelog_version(guild_id: int) -> int | Error:
 
 
 def set_guild_changelog_version(guild_id: int, version: int) -> Error:
+    """
+    Sets the changelog version for a guild.
+    :param guild_id: The guild ID.
+    :param version: The changelog index.
+    """
     cnx: PartialConnection = create_connection()
     if isinstance(cnx, Error):
         return cnx
@@ -136,7 +234,13 @@ def set_guild_changelog_version(guild_id: int, version: int) -> Error:
     return response
 
 
-def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | None | Error:
+def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | Error:
+    """
+    Retrieves the time at which a crate/clam was last caught.
+    :param guild_id: The guild ID.
+    :param claimable: The type of claimable.
+    :return: The datetime of the last caught item.
+    """
     cnx: PartialConnection = create_connection()
     if isinstance(cnx, Error):
         return cnx
@@ -170,6 +274,12 @@ def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | None | Er
 
 
 def set_last_caught(guild_id: int, claimable: Claimable, time: datetime) -> Error:
+    """
+    Sets the time at which a crate/clam was last caught.
+    :param guild_id: The guild ID.
+    :param claimable: The type of claimable.
+    :param time: The time at which the item was caught.
+    """
     cnx: PartialConnection = create_connection()
     if isinstance(cnx, Error):
         return cnx
