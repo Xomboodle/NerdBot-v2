@@ -15,3 +15,7 @@ class ErrorType(Enum):
 class WarningType(Enum):
     NoWarning = 0
     BadConnection = 1
+
+
+class ModerationType(Enum):
+    Mute = 1

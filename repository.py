@@ -8,7 +8,7 @@ from mysql.connector import MySQLConnection
 from mysql.connector.pooling import PooledMySQLConnection
 from mysql.connector.cursor import MySQLCursor
 
-from enums import Claimable, ErrorType, WarningType
+from enums import Claimable, ErrorType, WarningType, ModerationType
 from classes import Error
 
 from types import UnionType
@@ -415,6 +415,161 @@ def set_user_score(user_id: int, score: int, claimable: Claimable) -> Error:
                 cursor.execute(q_update_clam_score, params)
             elif claimable == Claimable.Coin:
                 cursor.execute(q_update_coin_score, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def get_top_group_scores(user_ids: list[int], claimable: Claimable) -> list[tuple[int, int]] | Error:
+    """
+    Gets top 10 scores for a particular claimable for a subset of users.
+    :param user_ids: A list of user IDs.
+    :param claimable: The type of claimable.
+    :return: A list of scores attached to user IDs.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "userIds": user_ids
+    }
+
+    q_get_group_coin_score = ("SELECT TOP (10) UserId, CoinsCaught "
+                              "FROM USERS "
+                              "WHERE UserId IN %(userIds)s "
+                              "ORDER BY CoinsCaught DESC")
+
+    q_get_group_clam_score = ("SELECT TOP (10) UserId, ClamsCaught "
+                              "FROM USERS "
+                              "WHERE UserId IN %(userIds)s "
+                              "ORDER BY ClamsCaught DESC")
+
+    with cnx.cursor() as cursor:
+        try:
+            if claimable == Claimable.Coin:
+                cursor.execute(q_get_group_coin_score, params)
+            elif claimable == Claimable.Clam:
+                cursor.execute(q_get_group_clam_score, params)
+            response = cursor.fetchall()
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def get_user_moderation_info(user_id: int, guild_id: int, moderation_type: ModerationType) -> list[int] | None | Error:
+    """
+    Retrieves data from the MODERATION table about a user's particular restriction within a guild
+    :param user_id: The ID of the user.
+    :param guild_id: The ID of the guild.
+    :param moderation_type: The type of restriction.
+    :return: An object with the restriction's data, or None if it doesn't exist.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "userId": user_id,
+        "guildId": guild_id,
+        "moderationType": moderation_type
+    }
+
+    q_get_user_moderation_info = ("SELECT AdditionalData "
+                                  "FROM MODERATION "
+                                  "WHERE UserId = %(userId)s "
+                                  "AND GuildId = %(userId)s "
+                                  "AND ModerationType = %(moderationType)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_get_user_moderation_info, params)
+            response = [int(x) for x in str(cursor.fetchone()).split(",")]
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def set_user_moderation_info(
+        user_id: int,
+        guild_id: int,
+        moderation_type: ModerationType,
+        additional_data: str) -> Error:
+    """
+    Adds moderation data to the MODERATION table for a user in a guild for a particular restriction.
+    :param user_id: The ID of the user.
+    :param guild_id: The ID of the guild.
+    :param moderation_type: The type of restriction.
+    :param additional_data: Any additional data needed.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "userId": user_id,
+        "guildId": guild_id,
+        "moderationType": moderation_type,
+        "additionalData": additional_data
+    }
+
+    q_set_user_moderation_info = ("INSERT INTO "
+                                  "MODERATION (UserId, GuildId, ModerationType, AdditionalData) "
+                                  "VALUES (%(userId)s, %(guildId)s, %(moderationType)s, %(additionalData)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_set_user_moderation_info, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def remove_user_moderation_info(user_id: int, guild_id: int, moderation_type: ModerationType) -> Error:
+    """
+    Removes a particular restriction for a user in a guild.
+    :param user_id: The ID of the user.
+    :param guild_id: The ID of the guild.
+    :param moderation_type: The type of restriction.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "userId": user_id,
+        "guildId": guild_id,
+        "moderationType": moderation_type
+    }
+
+    q_remove_user_moderation_info = ("DELETE FROM MODERATION "
+                                     "WHERE UserId = %(userId)s "
+                                     "AND GuildId = %(guildId)s "
+                                     "AND ModerationType = %(moderationType)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_remove_user_moderation_info, params)
             cnx.commit()
             response = Error(ErrorType.NoError)
         except mysql.connector.Error as error:
