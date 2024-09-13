@@ -315,6 +315,87 @@ def set_last_caught(guild_id: int, claimable: Claimable, time: datetime) -> Erro
     return response
 
 
+def get_current_exists(guild_id: int, claimable: Claimable) -> bool | Error:
+    """
+    Returns whether a particular claimable is currently unclaimed.
+    :param guild_id: The ID of the guild.
+    :param claimable: The type of claimable.
+    :return:
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "guildId": guild_id
+    }
+
+    q_current_coin = ("SELECT Current "
+                      "FROM GUILD_COINS "
+                      "WHERE GuildId = %(guildId)s")
+
+    q_current_clam = ("SELECT Current "
+                      "FROM GUILD_CLAMS "
+                      "WHERE GuildId = %(guildId)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            if claimable == Claimable.Coin:
+                cursor.execute(q_current_coin, params)
+            elif claimable == Claimable.Clam:
+                cursor.execute(q_current_clam, params)
+            response = cursor.fetchone()
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def update_current_exists(guild_id: int, claimable: Claimable, value: int) -> Error:
+    """
+    Returns whether a particular claimable is currently unclaimed.
+    :param guild_id: The ID of the guild.
+    :param claimable: The type of claimable.
+    :param value: The value to set Current to.
+    :return:
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "guildId": guild_id,
+        "current": value
+    }
+
+    q_current_coin = ("UPDATE GUILD_COINS "
+                      "SET Current = %(current)s"
+                      "WHERE GuildId = %(guildId)s")
+
+    q_current_clam = ("UPDATE GUILD_CLAMS "
+                      "SET Current = %(current)s"
+                      "WHERE GuildId = %(guildId)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            if claimable == Claimable.Coin:
+                cursor.execute(q_current_coin, params)
+            elif claimable == Claimable.Clam:
+                cursor.execute(q_current_clam, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
 # Internal use only
 def insert_user(user_id: int, cnx: PartialConnection, cursor: MySQLCursor) -> Error:
     params = {
