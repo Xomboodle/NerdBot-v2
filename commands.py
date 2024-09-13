@@ -19,37 +19,56 @@ Person: UnionType = User | Member
 
 # LISTEN EVENTS
 async def on_ready(bot: Bot):
-    data: Dict[str, Any] = functions.retrieve_guild_data()
     changelog: Dict[str, Any]
     latest_key: str
     changelog, latest_key = functions.retrieve_changelog()
+
+    all_guilds = functions.get_all_guilds()
+    print(all_guilds)
+    all_guild_ids = [x["id"] for x in all_guilds]
+
+    send_changelog = False
     for guild in bot.guilds:
-        # Set up data storage for guild if this is the first time the bot is operational in it, but had
-        # already joined
-        if str(guild.id) not in data.keys():
-            data[str(guild.id)] = {
-                "crateboard": {},
-                "clamboard": {}
-            }
-        if not changelog[latest_key]["sent"]:
+        if all_guilds is None:
+            break
+
+        # If guild has not yet been added to the DB
+        if guild.id not in all_guild_ids:
+            functions.add_new_guild(guild.id)
+            send_changelog = True
+        # If guild had been added to the DB, removed the bot, then rejoined. Should never be needed
+        # due to on_guild_join, but better safe than sorry
+        elif not next((item for item in all_guilds if item["id"] == guild.id and item["active"]), False):
+            functions.set_active_guild(guild.id)
+
+        # Encompasses rejoining guilds and pre-existing
+        if not send_changelog:
+            latest_sent = functions.get_guild_changelog_version(guild.id)
+            if latest_sent is None:
+                break
+            if latest_sent < int(latest_key):
+                send_changelog = True
+
+        if send_changelog:
+            send_changelog = False
+            functions.set_guild_changelog_version(guild.id, int(latest_key))
             channel: discord.TextChannel = guild.system_channel
             await channel.send(
                 f"# NEW UPDATE:\n{functions.format_update(changelog[latest_key])}"
             )
-    changelog[latest_key]["sent"] = True
-    functions.write_to_changelog(changelog)
-    functions.write_to_guild_data(data)
 
 
 async def on_guild_join(guild: Guild):
-    data: Dict[str, Any] = functions.retrieve_guild_data()
+    guild_result = functions.get_guild(guild.id)
+    if guild_result is None:
+        return
 
-    data[str(guild.id)] = {
-        "crateboard": {},
-        "clamboard": {}
-    }
-
-    functions.write_to_guild_data(data)
+    # New guild
+    if not guild_result:
+        functions.add_new_guild(guild.id)
+    # Rejoining so all the setup is already there
+    else:
+        functions.set_active_guild(guild.id)
 
 
 async def on_reaction_add(reaction: Reaction, user: Person):

@@ -1,4 +1,7 @@
 """functions.py"""
+import logging
+from typing import Dict, Any, List, Tuple
+
 import discord
 from discord import User, Member, Guild, Embed, TextChannel, Thread, Message
 from discord.ext.commands import Bot
@@ -14,7 +17,70 @@ from meme_get.memesites import RedditMemes, Meme
 
 import constants
 
-from typing import Dict, Any, List, Tuple
+import repository
+
+from classes import Error
+
+from enums import ErrorType
+
+from datatypes import Guilds, Guild as RepoGuild
+
+
+def get_all_guilds() -> Guilds | None:
+    result = repository.get_all_guilds()
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    return result
+
+
+def get_guild(guild_id: int) -> RepoGuild | bool | None:
+    result = repository.get_guild(guild_id)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def add_new_guild(guild_id: int) -> bool:
+    result = repository.add_guild(guild_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def set_active_guild(guild_id: int) -> bool:
+    result = repository.set_active_guild(guild_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_guild_changelog_version(guild_id: int) -> int | None:
+    result = repository.get_guild_changelog_version(guild_id)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    return result
+
+
+def set_guild_changelog_version(guild_id: int, version: int) -> bool:
+    result = repository.set_guild_changelog_version(guild_id, version)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
 
 
 def retrieve_guild_data() -> Dict[str, Any]:

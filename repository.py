@@ -13,6 +13,8 @@ from classes import Error
 
 from types import UnionType
 
+from datatypes import Guilds, Guild
+
 Connection: UnionType = MySQLConnection | PooledMySQLConnection
 PartialConnection: UnionType = Connection | Error
 
@@ -35,7 +37,7 @@ def create_connection() -> PartialConnection:
         return Error(WarningType.BadConnection, "Failed to connect to database.")
 
 
-def get_all_guild_ids() -> list[int] | Error:
+def get_all_guilds() -> Guilds | Error:
     """
     Retrieves all current guild IDs.
     :return: A list of guild IDs.
@@ -44,14 +46,55 @@ def get_all_guild_ids() -> list[int] | Error:
     if isinstance(cnx, Error):
         return cnx
 
-    q_select_all_guild_ids = ("SELECT GuildId "
+    q_select_all_guild_ids = ("SELECT GuildId, Active "
                               "FROM GUILDS")
 
+    response: Guilds | Error
     with cnx.cursor() as cursor:
         try:
             cursor.execute(q_select_all_guild_ids)
+            pre_response: Any = cursor.fetchall()
 
-            response: Any = cursor.fetchall()
+            response = [{
+                "id": x[0],
+                "active": x[1]
+            } for x in pre_response]
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def get_guild(guild_id: int) -> Guild | None | Error:
+    """
+    Retrieves all current guild IDs.
+    :return: A list of guild IDs.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "guildId": guild_id
+    }
+
+    q_select_all_guild_ids = ("SELECT GuildId, Active "
+                              "FROM GUILDS "
+                              "WHERE GuildId = %(guildId)s")
+
+    response: Guild | None | Error
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_select_all_guild_ids, params)
+            pre_response: Any = cursor.fetchone()
+
+            response = {
+                "id": pre_response[0],
+                "active": pre_response[1]
+            } if pre_response is not None else None
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
         finally:
@@ -141,16 +184,16 @@ def add_guild(guild_id: int) -> Error:
                           "VALUES (%(guildId)s, 1)")
 
     q_add_guild_id_to_coins = ("INSERT "
-                               "INTO GUILD_COINS (GuildID, LastCaught, Total) "
-                               "SELECT %(guildId)s AS GuildId, CURRENT_DATE() AS LastCaught, 0 AS Total "
+                               "INTO GUILD_COINS (GuildID, LastCaught) "
+                               "SELECT %(guildId)s AS GuildId, CURRENT_DATE() AS LastCaught "
                                "FROM GUILD_COINS "
-                               "WHERE (GuildId=%(guildId)s "
+                               "WHERE (GuildId=%(guildId)s) "
                                "HAVING COUNT(*)=0")
     q_add_guild_id_to_clams = ("INSERT "
-                               "INTO GUILD_CLAMS (GuildID, LastCaught, Total) "
-                               "SELECT %(guildId)s AS GuildId, CURRENT_DATE() AS LastCaught, 0 AS Total "
+                               "INTO GUILD_CLAMS (GuildID, LastCaught) "
+                               "SELECT %(guildId)s AS GuildId, CURRENT_DATE() AS LastCaught "
                                "FROM GUILD_CLAMS "
-                               "WHERE (GuildId=%(guildId)s "
+                               "WHERE (GuildId=%(guildId)s) "
                                "HAVING COUNT(*)=0")
 
     with cnx.cursor() as cursor:
@@ -192,7 +235,7 @@ def get_guild_changelog_version(guild_id: int) -> int | Error:
     with cnx.cursor() as cursor:
         try:
             cursor.execute(q_get_guild_changelog_version, params)
-            response: Any = cursor.fetchone()
+            response: Any = cursor.fetchone()[0]
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
         finally:
