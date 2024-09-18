@@ -6,4 +6,9 @@ class Guild(TypedDict):
     active: bool
 
 
+class CurrentClaimable(TypedDict):
+    current: int
+    currentChannel: int
+
+
 Guilds = list[Guild]

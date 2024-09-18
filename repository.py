@@ -13,7 +13,7 @@ from classes import Error
 
 from types import UnionType
 
-from datatypes import Guilds, Guild
+from datatypes import Guilds, Guild, CurrentClaimable
 
 Connection: UnionType = MySQLConnection | PooledMySQLConnection
 PartialConnection: UnionType = Connection | Error
@@ -358,12 +358,12 @@ def set_last_caught(guild_id: int, claimable: Claimable, time: datetime) -> Erro
     return response
 
 
-def get_current_exists(guild_id: int, claimable: Claimable) -> bool | Error:
+def get_current_claimable(guild_id: int, claimable: Claimable) -> CurrentClaimable | Error:
     """
-    Returns whether a particular claimable is currently unclaimed.
+    Returns the channel and message IDs of the currently available claimable, if it exists.
     :param guild_id: The ID of the guild.
     :param claimable: The type of claimable.
-    :return:
+    :return: A message ID and channel ID or None
     """
     cnx: PartialConnection = create_connection()
     if isinstance(cnx, Error):
@@ -373,21 +373,26 @@ def get_current_exists(guild_id: int, claimable: Claimable) -> bool | Error:
         "guildId": guild_id
     }
 
-    q_current_coin = ("SELECT Current "
+    q_current_coin = ("SELECT Current, CurrentChannelId "
                       "FROM GUILD_COINS "
                       "WHERE GuildId = %(guildId)s")
 
-    q_current_clam = ("SELECT Current "
+    q_current_clam = ("SELECT Current, CurrentChannelId "
                       "FROM GUILD_CLAMS "
                       "WHERE GuildId = %(guildId)s")
 
+    response: CurrentClaimable | Error
     with cnx.cursor() as cursor:
         try:
             if claimable == Claimable.Coin:
                 cursor.execute(q_current_coin, params)
             elif claimable == Claimable.Clam:
                 cursor.execute(q_current_clam, params)
-            response = cursor.fetchone()
+            pre_response: Any = cursor.fetchone()
+            response = {
+                "current": pre_response[0],
+                "currentChannel": pre_response[1]
+            }
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
         finally:
@@ -397,12 +402,13 @@ def get_current_exists(guild_id: int, claimable: Claimable) -> bool | Error:
     return response
 
 
-def update_current_exists(guild_id: int, claimable: Claimable, value: int) -> Error:
+def set_current_claimable(guild_id: int, claimable: Claimable, message_id: int | None, channel_id: int | None) -> Error:
     """
     Returns whether a particular claimable is currently unclaimed.
     :param guild_id: The ID of the guild.
     :param claimable: The type of claimable.
-    :param value: The value to set Current to.
+    :param message_id: The ID of the claimable message.
+    :param channel_id: The ID of the channel the claimable appeared in.
     :return:
     """
     cnx: PartialConnection = create_connection()
@@ -411,15 +417,18 @@ def update_current_exists(guild_id: int, claimable: Claimable, value: int) -> Er
 
     params = {
         "guildId": guild_id,
-        "current": value
+        "current": message_id,
+        "currentChannel": channel_id
     }
 
     q_current_coin = ("UPDATE GUILD_COINS "
-                      "SET Current = %(current)s"
+                      "SET Current = %(current)s, "
+                      "CurrentChannelId = %(currentChannel)s"
                       "WHERE GuildId = %(guildId)s")
 
     q_current_clam = ("UPDATE GUILD_CLAMS "
-                      "SET Current = %(current)s"
+                      "SET Current = %(current)s, "
+                      "CurrentChannelId = %(currentChannel)s"
                       "WHERE GuildId = %(guildId)s")
 
     with cnx.cursor() as cursor:
@@ -446,8 +455,8 @@ def insert_user(user_id: int, cnx: PartialConnection, cursor: MySQLCursor) -> Er
     }
 
     q_insert_user = ("INSERT "
-                     "INTO USERS (UserId)"
-                     "VALUES (%(userId)s)")
+                     "INTO USERS (UserId, CoinsCaught)"
+                     "VALUES (%(userId)s, 10)")
 
     try:
         cursor.execute(q_insert_user, params)
@@ -492,7 +501,7 @@ def get_user_score(user_id: int, claimable: Claimable) -> int | Error:
             user_exists = cursor.fetchone()
             if user_exists != 1:
                 new_user_response = insert_user(user_id, cnx, cursor)
-                response = 0 if new_user_response.Status == ErrorType.NoError else new_user_response
+                response = 10 if new_user_response.Status == ErrorType.NoError else new_user_response
             else:
                 if claimable == Claimable.Clam:
                     cursor.execute(q_get_user_clam_score, params)

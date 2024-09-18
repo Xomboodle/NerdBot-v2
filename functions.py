@@ -2,6 +2,8 @@
 import logging
 from typing import Dict, Any, List, Tuple
 
+from datetime import datetime
+
 import discord
 from discord import User, Member, Guild, Embed, TextChannel, Thread, Message
 from discord.ext.commands import Bot
@@ -21,9 +23,9 @@ import repository
 
 from classes import Error
 
-from enums import ErrorType
+from enums import ErrorType, Claimable
 
-from datatypes import Guilds, Guild as RepoGuild
+from datatypes import Guilds, Guild as RepoGuild, CurrentClaimable
 
 
 def get_all_guilds() -> Guilds | None:
@@ -97,6 +99,27 @@ def get_last_reactor(guild_id: int) -> int | bool | None:
 
 def set_last_reactor(guild_id: int, user_id: int) -> bool:
     result = repository.set_last_reactor(guild_id, user_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_current_coin_claimable(guild_id: int) -> CurrentClaimable | bool | None:
+    result = repository.get_current_claimable(guild_id, Claimable.Coin)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def set_current_coin_claimable(guild_id: int, message_id: int | None, channel_id: int | None) -> bool:
+    result = repository.set_current_claimable(guild_id, Claimable.Coin, message_id, channel_id)
     if result.Status == ErrorType.NoError:
         return True
 
@@ -308,16 +331,25 @@ def update_clam_data(data: Dict[str, Any], guild_id: str):
     write_to_claimables(data)
 
 
-def update_score(guild_id: str, member_id: int, score: int):
-    data: Dict[str, Any] = retrieve_guild_data()
-    try:
-        member_score: int = data[guild_id]['crateboard'][str(member_id)]
-    except KeyError:  # User has not had a score before now
-        member_score: int = 10
+def update_coin_score(member_id: int, score: int) -> bool:
+    member_score: int = repository.get_user_score(member_id, Claimable.Coin)
     member_score += score
-    data[guild_id]['crateboard'][str(member_id)] = member_score
+    result = repository.set_user_score(member_id, member_score, Claimable.Coin)
+    if result.Status == ErrorType.NoError:
+        return True
 
-    write_to_guild_data(data)
+    logging.error(result.Message)
+    return False
+
+
+def set_coin_last_caught(guild_id: int) -> bool:
+    # Only called once caught, so time is always "now"
+    result = repository.set_last_caught(guild_id, Claimable.Coin, datetime.now())
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
 
 
 def update_clam_score(guild_id: str, member_id: int):

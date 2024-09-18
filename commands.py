@@ -96,16 +96,16 @@ async def on_reaction_add(reaction: Reaction, user: Person):
 
 # CUSTOM COMMANDS
 async def claim(guild: Guild, channel: Channel, author: Person):
-    data: Dict[str, Any] = functions.retrieve_claimables_data()
-    crate_data: Dict[str, Any] = data['crate']
-    guild_id: str = str(guild.id)
+    current_claimable = functions.get_current_coin_claimable(guild.id)
+    if current_claimable is None:
+        return
 
-    if not crate_data['unclaimed'][guild_id]:
+    if not current_claimable:
         await channel.send("No crate to claim!")
         return
 
     # Make sure we're claiming it in the right channel, to avoid confusion
-    if str(channel.id) != crate_data['current'][guild_id]['channel']:
+    if channel.id != current_claimable["currentChannel"]:
         await channel.send("The crate is in a different channel. Claim it there!")
         return
 
@@ -118,11 +118,12 @@ async def claim(guild: Guild, channel: Channel, author: Person):
     )
 
     # Prepare and send edited message for the original crate message
-    await functions.edit_crate_message(int(crate_data['current'][guild_id]['message']), channel, member_info)
+    await functions.edit_crate_message(current_claimable["current"], channel, member_info)
 
-    functions.update_score(guild_id, member_info.id, score)
+    functions.update_coin_score(member_info.id, score)
 
-    functions.update_crate_data(data, guild_id)
+    functions.set_current_coin_claimable(guild.id, None, None)
+    functions.set_coin_last_caught(guild.id)
 
 
 async def clam(guild: Guild, channel: Channel, author: Person):
