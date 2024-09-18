@@ -703,3 +703,67 @@ def remove_user_moderation_info(user_id: int, guild_id: int, moderation_type: Mo
             cnx.close()
 
     return response
+
+
+def get_last_reactor(guild_id: int) -> int | Error:
+    """
+    Gets the ID of the last user to react to a message in a guild.
+    :param guild_id: The ID of the guild.
+    :return: The ID of the user.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "guildId": guild_id
+    }
+
+    q_get_last_reactor = ("SELECT LastReactor "
+                          "FROM GUILDS "
+                          "WHERE GuildId = %(guildId)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_get_last_reactor, params)
+            response = cursor.fetchone()
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response
+
+
+def set_last_reactor(guild_id: int, user_id: int) -> Error:
+    """
+    Sets the ID of the last user to react to a message in a guild.
+    :param guild_id: The ID of the guild.
+    :param user_id: The ID of the user.
+    """
+    cnx: PartialConnection = create_connection()
+    if isinstance(cnx, Error):
+        return cnx
+
+    params = {
+        "guildId": guild_id,
+        "userId": user_id
+    }
+
+    q_set_last_reactor = ("UPDATE GUILDS "
+                          "SET LastReactor = %(userId)s "
+                          "WHERE GuildId = %(guildId)s")
+
+    with cnx.cursor() as cursor:
+        try:
+            cursor.execute(q_set_last_reactor, params)
+            cnx.commit()
+            response = Error(ErrorType.NoError)
+        except mysql.connector.Error as error:
+            response = Error(ErrorType.MySqlException, error.msg)
+        finally:
+            cursor.close()
+            cnx.close()
+
+    return response

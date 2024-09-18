@@ -72,16 +72,18 @@ async def on_guild_join(guild: Guild):
 
 
 async def on_reaction_add(reaction: Reaction, user: Person):
-    data: Dict[str, Any] = functions.retrieve_guild_data()
-    guild_id: str = str(reaction.message.guild.id)
-    if "lastReactUser" not in data[guild_id].keys():
-        data[guild_id]['lastReactUser'] = user.id
+    guild_id = reaction.message.guild.id
+    last_reactor = functions.get_last_reactor(guild_id)
+    if last_reactor is None:
+        return
+
+    if not last_reactor:
+        functions.set_last_reactor(guild_id, user.id)
     else:
-        if user.id == data[guild_id]['lastReactUser']:
+        if user.id == last_reactor:
             return
         else:
-            data[guild_id]['lastReactUser'] = user.id
-    functions.write_to_guild_data(data)
+            functions.set_last_reactor(guild_id, user.id)
 
     try:
         reaction_name: str = str(reaction.emoji.name)

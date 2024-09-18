@@ -83,6 +83,27 @@ def set_guild_changelog_version(guild_id: int, version: int) -> bool:
     return False
 
 
+def get_last_reactor(guild_id: int) -> int | bool | None:
+    result = repository.get_last_reactor(guild_id)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def set_last_reactor(guild_id: int, user_id: int) -> bool:
+    result = repository.set_last_reactor(guild_id, user_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
 def retrieve_guild_data() -> Dict[str, Any]:
     with open('guilddata.json', 'r') as r_file:
         data: Dict[str, Any] = json.load(r_file)
