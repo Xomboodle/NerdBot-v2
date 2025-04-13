@@ -11,6 +11,8 @@ import functions
 from typing import Dict, Any, List, Tuple
 from types import UnionType
 
+import repository
+from enums import ModerationType
 
 # Types
 Channel: UnionType = discord.TextChannel | discord.Thread
@@ -211,31 +213,21 @@ async def recent(channel: Channel):
     await channel.send(functions.format_update(data[latest_key]))
 
 
-# TODO:
-#   Update to use DB
-# bonk
-async def restrict(member: Member, guild: Guild, bot: Bot):
-    user: User = await bot.fetch_user(member.id)
-    data: Dict[str, Any] = functions.retrieve_guild_data()
-    user_permissions = data[str(guild.id)][str(member.id)] if str(member.id) in data[str(guild.id)].keys() else {}
+async def restrict(member: Member, moderator: Person, guild: Guild):
+    permissions_revoked = []
 
     for channel in guild.text_channels:
-        channel_permissions = user_permissions[str(channel.id)] if str(channel.id) in user_permissions.keys() else {}
-        permissions = channel.overwrites_for(user)
+        permissions = channel.permissions_for(member)
         # Only apply restriction on channels they could send messages in before
         # This is important so the bot doesn't grant send_message permissions to all channels for that user later
         if permissions.send_messages:
-            permissions.update(send_messages=False)
-            channel_permissions["sendMessages"] = False
-        user_permissions[str(channel.id)] = channel_permissions
-        await channel.set_permissions(
-            member,
-            overwrite=permissions,
-            reason="Bonk!"
-        )
-
-    data[str(guild.id)][str(member.id)] = user_permissions
-    functions.write_to_guild_data(data)
+            permissions_revoked.append(channel.id)
+            await channel.set_permissions(
+                member,
+                send_messages=False,
+                reason="Bonk!"
+            )
+    functions.set_moderation_info(member.id, guild.id, moderator.id, ModerationType.Mute, permissions_revoked.__str__())
 
 
 async def smite(channel: Channel, user: str, self: bool):
@@ -245,41 +237,23 @@ async def smite(channel: Channel, user: str, self: bool):
         await channel.send(f"The gods dislike you, {user}. They smite you into oblivion.")
 
 
-async def unrestrict(member: Member, guild: Guild, bot: Bot) -> bool:
-    user: User = await bot.fetch_user(member.id)
-    data: Dict[str, Any] = functions.retrieve_guild_data()
-    user_permissions = data[str(guild.id)][str(member.id)] if str(member.id) in data[str(guild.id)].keys() else {}
-    if len(user_permissions.keys()) < 1:
+async def unrestrict(member: Member, guild: Guild) -> bool:
+    permissions_revoked: list[int] | bool = functions.get_moderation_info(member.id, guild.id, ModerationType.Mute)
+    # No permission revoked, so no changes to make
+    if type(permissions_revoked) == bool:
         return False
 
-    altered = False
     for channel in guild.text_channels:
-        channel_permissions = user_permissions[str(channel.id)] if str(channel.id) in user_permissions.keys() else {}
-        send_messages = channel_permissions["sendMessages"] if "sendMessages" in channel_permissions.keys() else None
-        if send_messages is None:
-            continue
-        permissions = channel.overwrites_for(user)
+        if channel.id in permissions_revoked:
+            await channel.set_permissions(
+                member,
+                send_messages=True,
+                reason="Unbonk!"
+            )
 
-        if not send_messages and not permissions.send_messages:
-            permissions.update(send_messages=True)
-            channel_permissions["sendMessages"] = True
-            altered = True
-        else:  # We don't care about not restricting, so remove from guild data
-            try:
-                channel_permissions.pop("sendMessages")  # Remove bot settings as manual takes precedence
-            except KeyError:
-                pass  # Doesn't exist so we don't care
+    functions.remove_moderation_info(member.id, guild.id, ModerationType.Mute)
 
-        user_permissions[str(channel.id)] = channel_permissions
-        await channel.set_permissions(
-            member,
-            overwrite=permissions,
-            reason="Unbonk!"
-        )
-
-    data[str(guild.id)][str(member.id)] = user_permissions
-    functions.write_to_guild_data(data)
-    return altered
+    return True
 
 
 async def update(channel: Channel, version: str | None):

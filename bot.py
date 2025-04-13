@@ -91,7 +91,7 @@ async def bonk(ctx: Context, member: discord.Member | DefaultInput):
         await ctx.send(f"{member} is not a valid input")
         return
 
-    await customs.restrict(member, ctx.guild, bot)
+    await customs.restrict(member, ctx.author, ctx.guild)
 
     await ctx.send(f"<@!{member.id}> has been sent to jail.")
 
@@ -172,7 +172,7 @@ async def unbonk(ctx: Context, member: discord.Member | DefaultInput):
         await ctx.send(f"{member} is not a valid input")
         return
 
-    altered: bool = await customs.unrestrict(member, ctx.guild, bot)
+    altered: bool = await customs.unrestrict(member, ctx.guild)
     if not altered:
         await ctx.send(f"Looks like I haven't changed that user's permissions at all. No changes needed!")
         return

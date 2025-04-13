@@ -23,7 +23,7 @@ import repository
 
 from classes import Error
 
-from enums import ErrorType, Claimable
+from enums import ErrorType, Claimable, ModerationType
 
 from datatypes import Guilds, Guild as RepoGuild, CurrentClaimable
 
@@ -410,6 +410,44 @@ def get_meme() -> str:
     result: str = memes[get_random_number(0, 99)].get_pic_url()
 
     return result
+
+
+def set_moderation_info(user_id: int,
+                        guild_id: int,
+                        moderator_id: int,
+                        moderation_type: ModerationType,
+                        extra: str | None = None):
+    result: Error = repository.set_user_moderation_info(user_id, guild_id, moderator_id, moderation_type, extra)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_moderation_info(user_id: int,
+                        guild_id: int,
+                        moderation_type: ModerationType):
+    result: list[int] | None | Error = repository.get_user_moderation_info(user_id, guild_id, moderation_type)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def remove_moderation_info(user_id: int,
+                           guild_id: int,
+                           moderation_type: ModerationType):
+    result: Error = repository.remove_user_moderation_info(user_id, guild_id, moderation_type)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
 
 
 def find_title(version: str, titles: List[Tuple[str, str]]) -> str:

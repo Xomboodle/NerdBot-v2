@@ -503,7 +503,10 @@ def get_user_score(user_id: int, claimable: Claimable) -> int | Error:
             user_exists = cursor.fetchone()
             if user_exists != 1:
                 new_user_response = insert_user(user_id, cnx, cursor)
-                response = 10 if new_user_response.Status == ErrorType.NoError else new_user_response
+                if new_user_response.Status == ErrorType.NoError:
+                    response = 10 if claimable == Claimable.Coin else 0
+                else:
+                    response = new_user_response
             else:
                 if claimable == Claimable.Clam:
                     cursor.execute(q_get_user_clam_score, params)
@@ -617,19 +620,23 @@ def get_user_moderation_info(user_id: int, guild_id: int, moderation_type: Moder
     params = {
         "userId": user_id,
         "guildId": guild_id,
-        "moderationType": moderation_type
+        "moderationType": moderation_type.value
     }
 
     q_get_user_moderation_info = ("SELECT AdditionalData "
                                   "FROM MODERATION "
                                   "WHERE UserId = %(userId)s "
-                                  "AND GuildId = %(userId)s "
+                                  "AND GuildId = %(guildId)s "
                                   "AND ModerationType = %(moderationType)s")
 
     with cnx.cursor() as cursor:
         try:
             cursor.execute(q_get_user_moderation_info, params)
-            response = [int(x) for x in str(cursor.fetchone()).split(",")]
+            fetched = cursor.fetchone()
+            if fetched is None:
+                response = fetched
+            else:
+                response = [int(x) for x in fetched[0].strip("[]").split(",")]
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
         finally:
@@ -642,12 +649,14 @@ def get_user_moderation_info(user_id: int, guild_id: int, moderation_type: Moder
 def set_user_moderation_info(
         user_id: int,
         guild_id: int,
+        moderator_id: int,
         moderation_type: ModerationType,
-        additional_data: str) -> Error:
+        additional_data: str | None) -> Error:
     """
     Adds moderation data to the MODERATION table for a user in a guild for a particular restriction.
-    :param user_id: The ID of the user.
+    :param user_id: The ID of the user having a moderation applied.
     :param guild_id: The ID of the guild.
+    :param moderator_id: The ID of the moderator executing the command.
     :param moderation_type: The type of restriction.
     :param additional_data: Any additional data needed.
     """
@@ -658,13 +667,14 @@ def set_user_moderation_info(
     params = {
         "userId": user_id,
         "guildId": guild_id,
-        "moderationType": moderation_type,
+        "moderatorId": moderator_id,
+        "moderationType": moderation_type.value,
         "additionalData": additional_data
     }
 
     q_set_user_moderation_info = ("INSERT INTO "
-                                  "MODERATION (UserId, GuildId, ModerationType, AdditionalData) "
-                                  "VALUES (%(userId)s, %(guildId)s, %(moderationType)s, %(additionalData)s")
+                                  "MODERATION (UserId, GuildId, ModeratorId, ModerationType, AdditionalData) "
+                                  "VALUES (%(userId)s, %(guildId)s, %(moderatorId)s, %(moderationType)s, %(additionalData)s)")
 
     with cnx.cursor() as cursor:
         try:
@@ -682,7 +692,8 @@ def set_user_moderation_info(
 
 def remove_user_moderation_info(user_id: int, guild_id: int, moderation_type: ModerationType) -> Error:
     """
-    Removes a particular restriction for a user in a guild.
+    Removes a particular restriction for a user in a guild. Any duplicate entries with different moderator IDs are
+    also removed.
     :param user_id: The ID of the user.
     :param guild_id: The ID of the guild.
     :param moderation_type: The type of restriction.
@@ -694,7 +705,7 @@ def remove_user_moderation_info(user_id: int, guild_id: int, moderation_type: Mo
     params = {
         "userId": user_id,
         "guildId": guild_id,
-        "moderationType": moderation_type
+        "moderationType": moderation_type.value
     }
 
     q_remove_user_moderation_info = ("DELETE FROM MODERATION "
