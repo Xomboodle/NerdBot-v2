@@ -1,4 +1,9 @@
 """functions.py"""
+import logging
+from typing import Dict, Any, List, Tuple
+
+from datetime import datetime
+
 import discord
 from discord import User, Member, Guild, Embed, TextChannel, Thread, Message
 from discord.ext.commands import Bot
@@ -14,14 +19,133 @@ from meme_get.memesites import RedditMemes, Meme
 
 import constants
 
-from typing import Dict, Any, List, Tuple
+import repository
+
+from classes import Error
+
+from enums import ErrorType, Claimable, ModerationType
+
+from datatypes import Guilds, Guild as RepoGuild, CurrentClaimable
 
 
-def retrieve_guild_data() -> Dict[str, Any]:
-    with open('guilddata.json', 'r') as r_file:
-        data: Dict[str, Any] = json.load(r_file)
+def get_all_guilds() -> Guilds | None:
+    result = repository.get_all_guilds()
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
 
-    return data
+    return result
+
+
+def get_guild(guild_id: int) -> RepoGuild | bool | None:
+    result = repository.get_guild(guild_id)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def add_new_guild(guild_id: int) -> bool:
+    result = repository.add_guild(guild_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def set_active_guild(guild_id: int) -> bool:
+    result = repository.set_active_guild(guild_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_guild_changelog_version(guild_id: int) -> int | None:
+    result = repository.get_guild_changelog_version(guild_id)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    return result
+
+
+def set_guild_changelog_version(guild_id: int, version: int) -> bool:
+    result = repository.set_guild_changelog_version(guild_id, version)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_last_reactor(guild_id: int) -> int | bool | None:
+    result = repository.get_last_reactor(guild_id)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def set_last_reactor(guild_id: int, user_id: int) -> bool:
+    result = repository.set_last_reactor(guild_id, user_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_current_coin_claimable(guild_id: int) -> CurrentClaimable | bool | None:
+    result = repository.get_current_claimable(guild_id, Claimable.Coin)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result["current"] is None:
+        return False
+
+    return result
+
+
+def set_current_coin_claimable(guild_id: int, message_id: int | None, channel_id: int | None) -> bool:
+    result = repository.set_current_claimable(guild_id, Claimable.Coin, message_id, channel_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_current_clam_claimable(guild_id: int) -> CurrentClaimable | bool | None:
+    result = repository.get_current_claimable(guild_id, Claimable.Clam)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result["current"] is None:
+        return False
+
+    return result
+
+
+def set_current_clam_claimable(guild_id: int, message_id: int | None, channel_id: int | None) -> bool:
+    result = repository.set_current_claimable(guild_id, Claimable.Clam, message_id, channel_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
 
 
 def retrieve_changelog() -> Tuple[Dict[str, Any], str]:
@@ -31,28 +155,6 @@ def retrieve_changelog() -> Tuple[Dict[str, Any], str]:
     latest_key: str = sorted([*data.keys()], key=lambda item: int(item), reverse=True)[0]
 
     return data, latest_key
-
-
-def retrieve_claimables_data() -> Dict[str, Any]:
-    with open('claimables.json', 'r') as r_file:
-        data: Dict[str, Any] = json.load(r_file)
-
-    return data
-
-
-def write_to_guild_data(data: Dict[str, Any]):
-    with open('guilddata.json', 'w') as w_file:
-        json.dump(data, w_file)
-
-
-def write_to_changelog(data: Dict[str, Any]):
-    with open('changelog.json', 'w') as w_file:
-        json.dump(data, w_file)
-
-
-def write_to_claimables(data: Dict[str, Any]):
-    with open('claimables.json', 'w') as w_file:
-        json.dump(data, w_file)
 
 
 def format_update(data: Dict[str, Any]) -> str:
@@ -76,8 +178,7 @@ def validate_usertype(user: Any, usertype: Any):
     return isinstance(user, usertype)
 
 
-async def generate_crate(guild_id: str,
-                         claimables: Dict[str, Any],
+async def generate_crate(guild_id: int,
                          channel: TextChannel | Thread):
     crate_embed: Embed = discord.Embed(
         title='A wild loot crate appeared!',
@@ -89,16 +190,13 @@ async def generate_crate(guild_id: str,
         value='Type `!claim` to collect the crate.',
         inline=False
     )
-    claimables['crate']['unclaimed'][guild_id] = True
+
     embed_message: Message = await channel.send(embed=crate_embed)
-    claimables['crate']['current'][guild_id]['message'] = str(embed_message.id)
-    claimables['crate']['current'][guild_id]['channel'] = str(channel.id)
 
-    write_to_claimables(claimables)
+    repository.set_current_claimable(guild_id, Claimable.Coin, embed_message.id, channel.id)
 
 
-async def generate_clam(guild_id: str,
-                        claimables: Dict[str, Any],
+async def generate_clam(guild_id: int,
                         channel: TextChannel | Thread):
     clam_embed = discord.Embed(
         title="A wild clam appeared!",
@@ -111,32 +209,14 @@ async def generate_clam(guild_id: str,
         inline=False
     )
 
-    claimables['clam']['unclaimed'][guild_id] = True
     embed_message: Message = await channel.send(embed=clam_embed)
-    claimables['clam']['current'][guild_id]['message'] = str(embed_message.id)
-    claimables['clam']['current'][guild_id]['channel'] = str(channel.id)
 
-    write_to_claimables(claimables)
+    repository.set_current_claimable(guild_id, Claimable.Clam, embed_message.id, channel.id)
 
 
 async def generate_claimable(guild: Guild,
                              channel: TextChannel | Thread):
-    claimables: Dict[str, Any] = retrieve_claimables_data()
-
     generate: List[bool] = [False, False]  # [Crate, Clam]
-    guild_id: str = str(guild.id)
-
-    # Need to check if there is a claimable that is currently unclaimed
-    # First need to check if a message has been sent in the guild after the bot
-    # has joined it
-    if guild_id not in claimables['crate']['unclaimed'].keys():
-        generate = [True, True]
-        claimables['crate']['unclaimed'][guild_id] = False
-        claimables['clam']['unclaimed'][guild_id] = False
-        claimables['crate']['current'][guild_id] = {}
-        claimables['clam']['current'][guild_id] = {}
-        claimables['crate']['lastCaught'][guild_id] = 0
-        claimables['clam']['lastCaught'][guild_id] = 0
 
     """
         Two checks carried out to determine whether a crate or clam is allowed to spawn:
@@ -144,16 +224,21 @@ async def generate_claimable(guild: Guild,
         2) The last crate/clam was claimed more than 15 minutes ago
     """
     now: float = time.time()
-    generate[0] = (now - claimables['crate']['lastCaught'][guild_id] >= constants.FIFTEEN_MINUTES) and \
-                  (not claimables['crate']['unclaimed'][guild_id])
-    generate[1] = (now - claimables['clam']['lastCaught'][guild_id] >= constants.FIFTEEN_MINUTES) and \
-                  (not claimables['clam']['unclaimed'][guild_id])
+    coin_last_caught: float = repository.get_last_caught(guild.id, Claimable.Coin).timestamp()
+    coin_unclaimed: CurrentClaimable = repository.get_current_claimable(guild.id, Claimable.Coin)
+    clam_last_caught: float = repository.get_last_caught(guild.id, Claimable.Clam).timestamp()
+    clam_unclaimed: CurrentClaimable = repository.get_current_claimable(guild.id, Claimable.Clam)
+
+    generate[0] = (now - coin_last_caught >= constants.FIFTEEN_MINUTES) and \
+                  (coin_unclaimed["current"] is None)
+    generate[1] = (now - clam_last_caught >= constants.FIFTEEN_MINUTES) and \
+                  (clam_unclaimed["current"] is None)
 
     number: int = random.randint(1, 20)
     if number == 1 and generate[0]:
-        await generate_crate(guild_id, claimables, channel)
+        await generate_crate(guild.id, channel)
     elif number == 2 and generate[1]:
-        await generate_clam(guild_id, claimables, channel)
+        await generate_clam(guild.id, channel)
 
 
 async def respond_to_message(channel: TextChannel | Thread, content: str, bot: Bot):
@@ -163,7 +248,7 @@ async def respond_to_message(channel: TextChannel | Thread, content: str, bot: B
             break
 
     # Specific cases
-    if re.findall('work', content):
+    if re.findall(r'\bwork\b', content):
         await channel.send("WORK?! You should be gaming!")
     elif re.findall('inspire me', content):
         inspiration = inspirobot.generate()
@@ -203,81 +288,89 @@ async def edit_clam_message(message_id: int, channel: TextChannel | Thread, memb
     await message.edit(embed=claim_embed)
 
 
-def update_crate_data(data: Dict[str, Any], guild_id: str):
-    data['crate']['unclaimed'][guild_id] = False
-    data['crate']['lastCaught'][guild_id] = time.time()
-    data['crate']['current'][guild_id] = {}
-    data['crate']['total'] += 1
+def get_coin_score(member_id: int) -> int | bool:
+    member_score: int = repository.get_user_score(member_id, Claimable.Coin)
+    if isinstance(member_score, Error) and member_score.Status == ErrorType.MySqlException:
+        logging.error(member_score.Message)
+        return False
 
-    write_to_claimables(data)
-
-
-def update_clam_data(data: Dict[str, Any], guild_id: str):
-    data['clam']['unclaimed'][guild_id] = False
-    data['clam']['lastCaught'][guild_id] = time.time()
-    data['clam']['current'][guild_id] = {}
-    data['clam']['total'] += 1
-
-    write_to_claimables(data)
+    return member_score
 
 
-def update_score(guild_id: str, member_id: int, score: int):
-    data: Dict[str, Any] = retrieve_guild_data()
-    try:
-        member_score: int = data[guild_id]['crateboard'][str(member_id)]
-    except KeyError:  # User has not had a score before now
-        member_score: int = 10
+def update_coin_score(member_id: int, score: int) -> bool:
+    member_score: int = get_coin_score(member_id)
+
     member_score += score
-    data[guild_id]['crateboard'][str(member_id)] = member_score
+    result = repository.set_user_score(member_id, member_score, Claimable.Coin)
+    if result.Status == ErrorType.NoError:
+        return True
 
-    write_to_guild_data(data)
+    logging.error(result.Message)
+    return False
 
 
-def update_clam_score(guild_id: str, member_id: int):
-    data: Dict[str, Any] = retrieve_guild_data()
+def set_coin_last_caught(guild_id: int) -> bool:
+    # Only called once caught, so time is always "now"
+    result = repository.set_last_caught(guild_id, Claimable.Coin, datetime.now())
+    if result.Status == ErrorType.NoError:
+        return True
 
-    try:
-        member_score: int = data[guild_id]['clamboard'][str(member_id)]
-        data[guild_id]['clamboard'][str(member_id)] = member_score + 1
-    except KeyError:  # User has not claimed a clam before
-        data[guild_id]['clamboard'][str(member_id)] = 1
+    logging.error(result.Message)
+    return False
 
-    write_to_guild_data(data)
+
+def get_clam_score(member_id: int) -> int | bool:
+    member_score: int = repository.get_user_score(member_id, Claimable.Clam)
+    if isinstance(member_score, Error) and member_score.Status == ErrorType.MySqlException:
+        logging.error(member_score.Message)
+        return False
+
+    return member_score
+
+
+def update_clam_score(member_id: int):
+    member_score: int = get_clam_score(member_id)
+
+    member_score += 1
+    result = repository.set_user_score(member_id, member_score, Claimable.Clam)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def set_clam_last_caught(guild_id: int) -> bool:
+    # Only called once caught, so time is always "now"
+    result = repository.set_last_caught(guild_id, Claimable.Clam, datetime.now())
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
 
 
 async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bool):
-    data: Dict[str, Any] = retrieve_guild_data()
-    guild_data: Dict = data[str(guild.id)]['crateboard' if coins else 'clamboard']
+    guild_members = [member.id for member in guild.members]
+    top_ten = repository.get_top_group_scores(guild_members, Claimable.Coin if coins else Claimable.Clam)
+    if isinstance(top_ten, Error) and top_ten.Status == ErrorType.MySqlException:
+        logging.error(top_ten.Message)
+        return
 
-    leaderboard: Dict[str, int] = dict(
-        sorted(guild_data.items(), key=lambda item: item[1], reverse=True)
-    )
-    users: List[str] = [*leaderboard]
     leaderboard_embed: discord.Embed = discord.Embed(
         title=f"{'Coins' if coins else 'Clams'} leaderboard",
         color=discord.Color.red()
     )
 
     # Display top 10
-    position: int = 0
-    skipped: int = 0
-    while position < 10:
-        try:
-            user: Member | None = guild.get_member(int(users[position+skipped]))
-            if user is None:
-                # User may not exist, but we still need to get up to 10 users if they exist later
-                skipped += 1
-                continue
-        except IndexError:  # Not enough server members have got on the leaderboard
-            break
+    for count, record in enumerate(top_ten):
+        user: Member | None = guild.get_member(record[0])
 
         leaderboard_embed.add_field(
-            name=f"{position+1} {user.display_name}",
-            value=f"{leaderboard[str(user.id)]} {'coins' if coins else 'clams'}",
+            name=f"{count+1} {user.nick if user.nick is not None else user.display_name}",
+            value=f"{record[1]} {'coins' if coins else 'clams'}",
             inline=False
         )
-
-        position += 1
 
     await channel.send(embed=leaderboard_embed)
 
@@ -293,6 +386,44 @@ def get_meme() -> str:
     result: str = memes[get_random_number(0, 99)].get_pic_url()
 
     return result
+
+
+def set_moderation_info(user_id: int,
+                        guild_id: int,
+                        moderator_id: int,
+                        moderation_type: ModerationType,
+                        extra: str | None = None):
+    result: Error = repository.set_user_moderation_info(user_id, guild_id, moderator_id, moderation_type, extra)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+def get_moderation_info(user_id: int,
+                        guild_id: int,
+                        moderation_type: ModerationType):
+    result: list[int] | None | Error = repository.get_user_moderation_info(user_id, guild_id, moderation_type)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def remove_moderation_info(user_id: int,
+                           guild_id: int,
+                           moderation_type: ModerationType):
+    result: Error = repository.remove_user_moderation_info(user_id, guild_id, moderation_type)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
 
 
 def find_title(version: str, titles: List[Tuple[str, str]]) -> str:

@@ -3,6 +3,8 @@
 # IMPORTS #
 import os
 
+from types import UnionType
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions
@@ -18,6 +20,8 @@ import functions
 
 import embeds
 
+
+DefaultInput: UnionType = str | None
 # Set the variables in .env file as environment variables
 load_dotenv()
 
@@ -78,12 +82,16 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User | disco
 # region User Commands
 @bot.command(aliases=['mute'])
 @has_permissions(manage_permissions=True)
-async def bonk(ctx: Context, member: discord.Member):
-    if not functions.validate_usertype(member, discord.Member):
-        await ctx.send(f"{member} is an invalid input.")
+async def bonk(ctx: Context, member: discord.Member | DefaultInput):
+    if member is None:
+        await ctx.send("No input given!")
         return
 
-    await customs.restrict(member, ctx.guild, bot)
+    if not functions.validate_usertype(member, discord.Member):
+        await ctx.send(f"{member} is not a valid input")
+        return
+
+    await customs.restrict(member, ctx.author, ctx.guild)
 
     await ctx.send(f"<@!{member.id}> has been sent to jail.")
 
@@ -100,7 +108,7 @@ async def clam(ctx: Context):
 
 @bot.command()
 async def clams(ctx: Context):
-    await customs.clams(ctx.guild, ctx.channel, ctx.author)
+    await customs.clams(ctx.channel, ctx.author)
 
 
 @bot.command()
@@ -110,7 +118,7 @@ async def clamscore(ctx: Context):
 
 @bot.command()
 async def coins(ctx: Context):
-    await customs.coins(ctx.guild, ctx.channel, ctx.author)
+    await customs.coins(ctx.channel, ctx.author)
 
 
 @bot.command()
@@ -124,7 +132,7 @@ async def highscore(ctx: Context):
 
 
 @bot.command()
-async def insult(ctx: Context, arg: str | None = None):
+async def insult(ctx: Context, arg: DefaultInput = None):
     if arg is None:
         await ctx.channel.send("At least choose someone to insult!")
         return
@@ -142,25 +150,29 @@ async def recent(ctx: Context):
 
 
 @bot.command()
-async def smite(ctx: Context, arg: str | None = None):
+async def smite(ctx: Context, arg: DefaultInput = None):
     self: bool = True if arg is None else False
     user: str = arg if not self else str(ctx.message.author.id)
     await customs.smite(ctx.channel, user, self)
 
 
 @bot.command()
-async def update(ctx: Context, arg: str | None = None):
+async def update(ctx: Context, arg: DefaultInput = None):
     await customs.update(ctx.channel, arg)
 
 
 @bot.command(aliases=['unmute'])
 @has_permissions(manage_permissions=True)
-async def unbonk(ctx: Context, member: discord.Member):
+async def unbonk(ctx: Context, member: discord.Member | DefaultInput):
+    if member is None:
+        await ctx.send("No input given!")
+        return
+
     if not functions.validate_usertype(member, discord.Member):
         await ctx.send(f"{member} is not a valid input")
         return
 
-    altered: bool = await customs.unrestrict(member, ctx.guild, bot)
+    altered: bool = await customs.unrestrict(member, ctx.guild)
     if not altered:
         await ctx.send(f"Looks like I haven't changed that user's permissions at all. No changes needed!")
         return
