@@ -296,18 +296,18 @@ def get_last_caught(guild_id: int, claimable: Claimable) -> datetime | Error:
     if claimable == Claimable.Coin:
         q_get_last_caught = ("SELECT LastCaught "
                              "FROM GUILD_COINS "
-                             "WHERE GuildID = %(guildId)s")
+                             "WHERE GuildId = %(guildId)s")
     elif claimable == Claimable.Clam:
         q_get_last_caught = ("SELECT LastCaught "
-                             "FROM GUILD_CLAM "
-                             "WHERE GuildID = %(guildId)s")
+                             "FROM GUILD_CLAMS "
+                             "WHERE GuildId = %(guildId)s")
     else:
         return Error(ErrorType.InvalidArgument, "Invalid argument for claimable.")
 
     with cnx.cursor() as cursor:
         try:
             cursor.execute(q_get_last_caught, params)
-            response: Any = cursor.fetchone()
+            response: Any = cursor.fetchone()[0]
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
         finally:
@@ -415,6 +415,8 @@ def set_current_claimable(guild_id: int, claimable: Claimable, message_id: int |
     if isinstance(cnx, Error):
         return cnx
 
+    print("Connection established. Running set_current_claimable with parameters:\n",
+          f"\t guild_id: {guild_id}\n\t claimable: {claimable}\n\t message_id: {message_id}\n\t channel_id: {channel_id}")
     params = {
         "guildId": guild_id,
         "current": message_id,
@@ -423,12 +425,12 @@ def set_current_claimable(guild_id: int, claimable: Claimable, message_id: int |
 
     q_current_coin = ("UPDATE GUILD_COINS "
                       "SET Current = %(current)s, "
-                      "CurrentChannelId = %(currentChannel)s"
+                      "CurrentChannelId = %(currentChannel)s "
                       "WHERE GuildId = %(guildId)s")
 
     q_current_clam = ("UPDATE GUILD_CLAMS "
                       "SET Current = %(current)s, "
-                      "CurrentChannelId = %(currentChannel)s"
+                      "CurrentChannelId = %(currentChannel)s "
                       "WHERE GuildId = %(guildId)s")
 
     with cnx.cursor() as cursor:

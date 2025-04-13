@@ -207,11 +207,7 @@ def validate_usertype(user: Any, usertype: Any):
     return isinstance(user, usertype)
 
 
-# TODO:
-#   Change the claimable generators to work with DB
-
-async def generate_crate(guild_id: str,
-                         claimables: Dict[str, Any],
+async def generate_crate(guild_id: int,
                          channel: TextChannel | Thread):
     crate_embed: Embed = discord.Embed(
         title='A wild loot crate appeared!',
@@ -223,16 +219,13 @@ async def generate_crate(guild_id: str,
         value='Type `!claim` to collect the crate.',
         inline=False
     )
-    claimables['crate']['unclaimed'][guild_id] = True
+
     embed_message: Message = await channel.send(embed=crate_embed)
-    claimables['crate']['current'][guild_id]['message'] = str(embed_message.id)
-    claimables['crate']['current'][guild_id]['channel'] = str(channel.id)
 
-    write_to_claimables(claimables)
+    repository.set_current_claimable(guild_id, Claimable.Coin, embed_message.id, channel.id)
 
 
-async def generate_clam(guild_id: str,
-                        claimables: Dict[str, Any],
+async def generate_clam(guild_id: int,
                         channel: TextChannel | Thread):
     clam_embed = discord.Embed(
         title="A wild clam appeared!",
@@ -245,32 +238,14 @@ async def generate_clam(guild_id: str,
         inline=False
     )
 
-    claimables['clam']['unclaimed'][guild_id] = True
     embed_message: Message = await channel.send(embed=clam_embed)
-    claimables['clam']['current'][guild_id]['message'] = str(embed_message.id)
-    claimables['clam']['current'][guild_id]['channel'] = str(channel.id)
 
-    write_to_claimables(claimables)
+    repository.set_current_claimable(guild_id, Claimable.Clam, embed_message.id, channel.id)
 
 
 async def generate_claimable(guild: Guild,
                              channel: TextChannel | Thread):
-    claimables: Dict[str, Any] = retrieve_claimables_data()
-
     generate: List[bool] = [False, False]  # [Crate, Clam]
-    guild_id: str = str(guild.id)
-
-    # Need to check if there is a claimable that is currently unclaimed
-    # First need to check if a message has been sent in the guild after the bot
-    # has joined it
-    if guild_id not in claimables['crate']['unclaimed'].keys():
-        generate = [True, True]
-        claimables['crate']['unclaimed'][guild_id] = False
-        claimables['clam']['unclaimed'][guild_id] = False
-        claimables['crate']['current'][guild_id] = {}
-        claimables['clam']['current'][guild_id] = {}
-        claimables['crate']['lastCaught'][guild_id] = 0
-        claimables['clam']['lastCaught'][guild_id] = 0
 
     """
         Two checks carried out to determine whether a crate or clam is allowed to spawn:
@@ -278,16 +253,21 @@ async def generate_claimable(guild: Guild,
         2) The last crate/clam was claimed more than 15 minutes ago
     """
     now: float = time.time()
-    generate[0] = (now - claimables['crate']['lastCaught'][guild_id] >= constants.FIFTEEN_MINUTES) and \
-                  (not claimables['crate']['unclaimed'][guild_id])
-    generate[1] = (now - claimables['clam']['lastCaught'][guild_id] >= constants.FIFTEEN_MINUTES) and \
-                  (not claimables['clam']['unclaimed'][guild_id])
+    coin_last_caught: float = repository.get_last_caught(guild.id, Claimable.Coin).timestamp()
+    coin_unclaimed: CurrentClaimable = repository.get_current_claimable(guild.id, Claimable.Coin)
+    clam_last_caught: float = repository.get_last_caught(guild.id, Claimable.Clam).timestamp()
+    clam_unclaimed: CurrentClaimable = repository.get_current_claimable(guild.id, Claimable.Clam)
+
+    generate[0] = (now - coin_last_caught >= constants.FIFTEEN_MINUTES) and \
+                  (coin_unclaimed["current"] is None)
+    generate[1] = (now - clam_last_caught >= constants.FIFTEEN_MINUTES) and \
+                  (clam_unclaimed["current"] is None)
 
     number: int = random.randint(1, 20)
     if number == 1 and generate[0]:
-        await generate_crate(guild_id, claimables, channel)
+        await generate_crate(guild.id, channel)
     elif number == 2 and generate[1]:
-        await generate_clam(guild_id, claimables, channel)
+        await generate_clam(guild.id, channel)
 
 
 async def respond_to_message(channel: TextChannel | Thread, content: str, bot: Bot):
