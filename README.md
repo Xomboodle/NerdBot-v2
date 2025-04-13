@@ -17,17 +17,14 @@ to prove a point to someone). When complete, Nerdbot 2.0 will be more *maintaina
 ### So what is Nerdbot?
 
 ---
-Nerdbot is a bot constructed wholly in Python for the social platform Discord. Designed
+Nerdbot is a bot constructed in Python for the social platform Discord. Designed
 to help with server engagement, it has a number of features already, such as:
 - Insulting your friends
 - Randomised spawns of collectables (with a leaderboard!)
 - A mute tool, for those server members that get just a bit too annoying in chat
 - And many more to come!
 
-As of 5th Feb 2024, Nerdbot 2 officially went online in a select number of servers. It is
-currently utilising JSON files as storage, but with its new host home, this will be steadily
-migrated over to using a MySQL database for better data storage. Work for this is currently
-ongoing.
+As of 5th Feb 2024, Nerdbot 2 officially went online in a select number of servers. It utilises a MySQL database for persistent data storage.
 
 ### What about the old Nerdbot?
 
@@ -48,8 +45,8 @@ Planned additions / changes:
 - Additional moderation commands (TBD)
 - Increase verbosity of `help` command - get the help info for a specific command, rather
 than the whole list (TODO)
-- Improvements to data storage (In progress)
-- Improvements to code readability and maintainability (In progress)
+- Improvements to data storage (Implemented)
+- Improvements to code readability and maintainability (Forever in progress)
 - New features for all users to play around with (TBD)
 
 This list will be updated in the future once development has had more progress made.
