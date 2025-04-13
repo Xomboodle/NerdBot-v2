@@ -10,8 +10,7 @@
         "3": "Added `smite` command, cause why not.",
         "4": "Added bot activity."
       }
-    },
-    "sent": true
+    }
   },
   "1": {
     "title": "V.0.2.0 - The Permanence Update",
@@ -22,8 +21,7 @@
         "1": "Some internal changes to how the changelog is accessed.",
         "2": "Added trigger words in regular messages."
       }
-    },
-    "sent": true
+    }
   },
   "2": {
     "title": "V.0.3.0 - The Gambler's Update",
@@ -51,8 +49,7 @@
         "18": "Added `recent` command to see the absolute latest addition.",
         "19": "Added automatic call to `recent` on bot startup. Just like this!"
       }
-    },
-    "sent": true
+    }
   },
   "3": {
     "title": "V.0.4.0 - The Meme Update",
@@ -71,8 +68,7 @@
         "9": "Added bonk and unbonk command. When the peasants begin to revolt, throw 'em in a cell. Can only be used by someone with Manage Permissions.",
         "10": "Added clams. Claim the clams if you find a clam to claim. Legit or quit."
       }
-    },
-    "sent": true
+    }
   },
   "4": {
     "title": "V.0.5.0 - The Adventure Update",
@@ -97,8 +93,7 @@
         "0": "Fixed issue with character profiles overwriting each other.",
         "1": "Deleted any profiles so the fix can be implemented."
       }
-    },
-    "sent": true
+    }
   },
   "6": {
     "title": "V.0.5.1.1",
@@ -108,8 +103,7 @@
         "0": "Fixed issue with timeout on character creation not working.",
         "1": "Actually fixed issue with character profiles overwriting each other."
       }
-    },
-    "sent": true
+    }
   },
   "7": {
     "title": "V.0.5.2",
@@ -120,8 +114,7 @@
         "1": "Implemented some spam prevention on the bot's reactions to your reactions.",
         "2": "Temporarily removed the ability to go on adventures while it gets fixed. The monsters are on holiday."
       }
-    },
-    "sent": true
+    }
   },
   "8": {
     "title": "V.0.5.3",
@@ -135,8 +128,7 @@
         "4": "Bot activity updated.",
         "5": "Crate message now updates when the crate is claimed."
       }
-    },
-    "sent": true
+    }
   },
   "9": {
     "title": "V.0.5.4 - Adventure Update 2 Electric Boogaloo",
@@ -153,8 +145,7 @@
         "7": "Fixed issue with some user reactions not triggering bot reactions.",
         "8": "Fixed typos in help command."
       }
-    },
-    "sent": true
+    }
   },
   "10": {
     "title": "V.0.5.5",
@@ -165,8 +156,7 @@
         "1": "Provided NerdBot with services required for server-specific commands.",
         "2": "Updated highscore so that it will display your username if you don't have a nickname in the server you access it from."
       }
-    },
-    "sent": true
+    }
   },
   "11": {
     "title": "V.0.5.5.1",
@@ -179,8 +169,7 @@
         "3": "Fixed `highscore` breaking on servers that don't have every person ever in.",
         "4": "Fixed crate and clam not displaying claimer's name if they don't have a nickname."
       }
-    },
-    "sent": true
+    }
   },
   "12": {
     "title": "V.0.5.6",
@@ -191,8 +180,7 @@
         "1": "Fixed typo in `smite` command's message.",
         "2": "Reduced minimum number of enemies that can be fought with the battle command to give lower level characters slightly increased odds of winning."
       }
-    },
-    "sent": true
+    }
   },
   "13": {
     "title": "V.0.5.7",
@@ -201,8 +189,7 @@
       "items": {
         "0": "Added `backflip` command."
       }
-    },
-    "sent": true
+    }
   },
   "14": {
     "title": "V.0.6.0 - The Why Not? Update",
@@ -213,14 +200,13 @@
         "1": "Allowed Nerdbot to choose to do backflips if they see the word \"backflip\" in a message.",
         "2": "Nerdbot now responds to their name being used in passing."
       }
-    },
-    "sent": true
+    }
   },
   "15": {
     "title": "V.1.0 - The Big Reveal",
     "content": {
       "subtext": "A whole host of big changes have happened, deeming NerdBot officially in its 1.0 status!\nLet's take a look at them.",
-      "items":  {
+      "items": {
         "0": "Redesigned changelog messages. All shiny and formatted.",
         "1": "Updated the crate/clam spawning. Smoother separation of server spawns and a timer, so they don't spawn too often. Completely spam-proof.",
         "2": "Begun storing data specific to a guild (server) separate from within the code, so it carries across bot restarts.",
@@ -231,8 +217,7 @@
         "7": "For more professional sounding reasons, also added `mute`/`unmute` commands.",
         "8": "Migrated to another server host. Now Nerdbot should be even more permanently annoying >:)"
       }
-    },
-    "sent": true
+    }
   },
   "16": {
     "title": "V.1.0.1",
@@ -244,7 +229,20 @@
         "2": "Fixed issue where Nerdy would occasionally not respond to its name.",
         "3": "Made `update` search query case-insensitive."
       }
-    },
-    "sent": false
+    }
+  },
+  "17": {
+    "title": "V.1.1.0 - The Database",
+    "content": {
+      "subtext": "Major backend changes, finally. Plus a little QoL ;)",
+      "items": {
+        "0": "Migrated storage of data to a database server.",
+        "1": "Coin and clam values are now independent of the server, and will carry across.",
+        "2": "Nerdbot now only gives a work-related response to the word 'work'.",
+        "3": "Added a variety of work-related responses.",
+        "4": "Simplified behind-the-scenes process of muting/unmuting.",
+        "5": "Improved some code readability."
+      }
+    }
   }
 }

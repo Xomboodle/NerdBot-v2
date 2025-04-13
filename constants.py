@@ -22,12 +22,32 @@ REACTION_IMAGES: Dict[str, str] = {
 SWEARS: List[str] = ["fuck", "shit", "bitch"]
 FIFTEEN_MINUTES: int = 900
 INSULTS: List[str] = [
-    "Wow, {arg}'s face is looking real ugly today.",
-    "Ew, do you smell that? Oh, that's just {arg}.",
-    "We thought they went to Mordor to throw the One Ring in Mount Doom, but it was actually to get away from {arg}",
-    "If {arg} was a Pokemon, they would be the only one Ash wouldn't catch",
-    "Reverse insult! {arg} is looking lovely today, whereas you, {arg2}, wish only to spread hate across the world."
-    " Meanie.",
-    "{arg} is proof light travels faster than sound. They appear bright until they speak.",
-    "{arg}'s mother is a hamster and their father smells of elderberries!",
+    (
+        "Wow, {arg}'s face is looking real ugly today."
+    ),
+    (
+        "Ew, do you smell that? Oh, that's just {arg}."
+    ),
+    (
+        "We thought they went to Mordor to throw the One Ring in Mount Doom, "
+        "but it was actually to get away from {arg}."
+    ),
+    (
+        "If {arg} was a Pokémon, they would be the only one Ash wouldn't catch."
+    ),
+    (
+        "Reverse insult! {arg} is looking lovely today, whereas you, {arg2}, "
+        "wish only to spread hate across the world. Meanie."
+    ),
+    (
+        "{arg} is proof light travels faster than sound. They appear bright until they speak."
+    ),
+    (
+        "{arg}'s mother is a hamster and their father smells of elderberries!"
+    ),
+]
+WORK_RESPONSES = [
+    "WORK?! You should be gaming!",
+    "I hope I didn't hear you being productive.",
+    "That's enough work now. I'm prescribing you with game time."
 ]
