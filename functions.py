@@ -112,7 +112,7 @@ def get_current_coin_claimable(guild_id: int) -> CurrentClaimable | bool | None:
         logging.error(result.Message)
         return None
 
-    if result is None:
+    if result["current"] is None:
         return False
 
     return result
@@ -133,7 +133,7 @@ def get_current_clam_claimable(guild_id: int) -> CurrentClaimable | bool | None:
         logging.error(result.Message)
         return None
 
-    if result is None:
+    if result["current"] is None:
         return False
 
     return result

@@ -102,6 +102,7 @@ async def claim(guild: Guild, channel: Channel, author: Person):
     if current_claimable is None:
         return
 
+    print(current_claimable)
     if not current_claimable:
         await channel.send("No crate to claim!")
         return
