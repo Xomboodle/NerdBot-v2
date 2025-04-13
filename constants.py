@@ -26,8 +26,7 @@ INSULTS: List[str] = [
     "Ew, do you smell that? Oh, that's just {arg}.",
     "We thought they went to Mordor to throw the One Ring in Mount Doom, but it was actually to get away from {arg}",
     "If {arg} was a Pokemon, they would be the only one Ash wouldn't catch",
-    "Reverse insult! {arg} is looking lovely today, whereas you, {arg2}, wish only to spread hate across the world."
-    " Meanie.",
+    "Reverse insult! {arg} is looking lovely today, whereas you, {arg2}, wish only to spread hate across the world. Meanie.",
     "{arg} is proof light travels faster than sound. They appear bright until they speak.",
     "{arg}'s mother is a hamster and their father smells of elderberries!",
 ]

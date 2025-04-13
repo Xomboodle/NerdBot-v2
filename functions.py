@@ -127,6 +127,27 @@ def set_current_coin_claimable(guild_id: int, message_id: int | None, channel_id
     return False
 
 
+def get_current_clam_claimable(guild_id: int) -> CurrentClaimable | bool | None:
+    result = repository.get_current_claimable(guild_id, Claimable.Clam)
+    if isinstance(result, Error) and result.Status == ErrorType.MySqlException:
+        logging.error(result.Message)
+        return None
+
+    if result is None:
+        return False
+
+    return result
+
+
+def set_current_clam_claimable(guild_id: int, message_id: int | None, channel_id: int | None) -> bool:
+    result = repository.set_current_claimable(guild_id, Claimable.Clam, message_id, channel_id)
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
 def retrieve_guild_data() -> Dict[str, Any]:
     with open('guilddata.json', 'r') as r_file:
         data: Dict[str, Any] = json.load(r_file)
@@ -185,6 +206,9 @@ def validate_author(user: User | Member,
 def validate_usertype(user: Any, usertype: Any):
     return isinstance(user, usertype)
 
+
+# TODO:
+#   Change the claimable generators to work with DB
 
 async def generate_crate(guild_id: str,
                          claimables: Dict[str, Any],
@@ -272,8 +296,9 @@ async def respond_to_message(channel: TextChannel | Thread, content: str, bot: B
             await channel.send("Ooh, do you kiss your momma with that mouth?")
             break
 
+    print(content)
     # Specific cases
-    if re.findall('work', content):
+    if re.findall(r'\bwork\b', content):
         await channel.send("WORK?! You should be gaming!")
     elif re.findall('inspire me', content):
         inspiration = inspirobot.generate()
@@ -313,24 +338,6 @@ async def edit_clam_message(message_id: int, channel: TextChannel | Thread, memb
     await message.edit(embed=claim_embed)
 
 
-def update_crate_data(data: Dict[str, Any], guild_id: str):
-    data['crate']['unclaimed'][guild_id] = False
-    data['crate']['lastCaught'][guild_id] = time.time()
-    data['crate']['current'][guild_id] = {}
-    data['crate']['total'] += 1
-
-    write_to_claimables(data)
-
-
-def update_clam_data(data: Dict[str, Any], guild_id: str):
-    data['clam']['unclaimed'][guild_id] = False
-    data['clam']['lastCaught'][guild_id] = time.time()
-    data['clam']['current'][guild_id] = {}
-    data['clam']['total'] += 1
-
-    write_to_claimables(data)
-
-
 def update_coin_score(member_id: int, score: int) -> bool:
     member_score: int = repository.get_user_score(member_id, Claimable.Coin)
     member_score += score
@@ -352,18 +359,29 @@ def set_coin_last_caught(guild_id: int) -> bool:
     return False
 
 
-def update_clam_score(guild_id: str, member_id: int):
-    data: Dict[str, Any] = retrieve_guild_data()
+def update_clam_score(member_id: int):
+    member_score: int = repository.get_user_score(member_id, Claimable.Clam)
+    member_score += 1
+    result = repository.set_user_score(member_id, member_score, Claimable.Clam)
+    if result.Status == ErrorType.NoError:
+        return True
 
-    try:
-        member_score: int = data[guild_id]['clamboard'][str(member_id)]
-        data[guild_id]['clamboard'][str(member_id)] = member_score + 1
-    except KeyError:  # User has not claimed a clam before
-        data[guild_id]['clamboard'][str(member_id)] = 1
-
-    write_to_guild_data(data)
+    logging.error(result.Message)
+    return False
 
 
+def set_clam_last_caught(guild_id: int) -> bool:
+    # Only called once caught, so time is always "now"
+    result = repository.set_last_caught(guild_id, Claimable.Clam, datetime.now())
+    if result.Status == ErrorType.NoError:
+        return True
+
+    logging.error(result.Message)
+    return False
+
+
+# TODO:
+#   Change leaderboard to work with DB
 async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bool):
     data: Dict[str, Any] = retrieve_guild_data()
     guild_data: Dict = data[str(guild.id)]['crateboard' if coins else 'clamboard']

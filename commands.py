@@ -127,16 +127,16 @@ async def claim(guild: Guild, channel: Channel, author: Person):
 
 
 async def clam(guild: Guild, channel: Channel, author: Person):
-    data: Dict[str, Any] = functions.retrieve_claimables_data()
-    clam_data: Dict[str, Any] = data['clam']
-    guild_id: str = str(guild.id)
+    current_claimable = functions.get_current_clam_claimable(guild.id)
+    if current_claimable is None:
+        return
 
-    if not clam_data['unclaimed'][guild_id]:
+    if not current_claimable:
         await channel.send("No clam to claim!")
         return
 
     # Make sure we're claiming it in the right channel, to avoid confusion
-    if str(channel.id) != clam_data['current'][guild_id]['channel']:
+    if channel.id != current_claimable["currentChannel"]:
         await channel.send("The clam to claim is clearly elsewhere. Claim it there!")
         return
 
@@ -147,11 +147,12 @@ async def clam(guild: Guild, channel: Channel, author: Person):
     )
 
     # Prepare and send edited message for the original crate message
-    await functions.edit_clam_message(int(clam_data['current'][guild_id]['message']), channel, member_info)
+    await functions.edit_clam_message(current_claimable["current"], channel, member_info)
 
-    functions.update_clam_score(guild_id, member_info.id)
+    functions.update_clam_score(member_info.id)
 
-    functions.update_clam_data(data, guild_id)
+    functions.set_current_clam_claimable(guild.id, None, None)
+    functions.set_clam_last_caught(guild.id)
 
 
 async def coins(guild: Guild, channel: Channel, author: Person):
@@ -210,6 +211,8 @@ async def recent(channel: Channel):
     await channel.send(functions.format_update(data[latest_key]))
 
 
+# TODO:
+#   Update to use DB
 # bonk
 async def restrict(member: Member, guild: Guild, bot: Bot):
     user: User = await bot.fetch_user(member.id)
