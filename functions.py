@@ -276,7 +276,6 @@ async def respond_to_message(channel: TextChannel | Thread, content: str, bot: B
             await channel.send("Ooh, do you kiss your momma with that mouth?")
             break
 
-    print(content)
     # Specific cases
     if re.findall(r'\bwork\b', content):
         await channel.send("WORK?! You should be gaming!")
@@ -320,6 +319,10 @@ async def edit_clam_message(message_id: int, channel: TextChannel | Thread, memb
 
 def update_coin_score(member_id: int, score: int) -> bool:
     member_score: int = repository.get_user_score(member_id, Claimable.Coin)
+    if isinstance(member_score, Error) and member_score.Status == ErrorType.MySqlException:
+        logging.error(member_score.Message)
+        return False
+
     member_score += score
     result = repository.set_user_score(member_id, member_score, Claimable.Coin)
     if result.Status == ErrorType.NoError:
@@ -341,6 +344,10 @@ def set_coin_last_caught(guild_id: int) -> bool:
 
 def update_clam_score(member_id: int):
     member_score: int = repository.get_user_score(member_id, Claimable.Clam)
+    if isinstance(member_score, Error) and member_score.Status == ErrorType.MySqlException:
+        logging.error(member_score.Message)
+        return False
+
     member_score += 1
     result = repository.set_user_score(member_id, member_score, Claimable.Clam)
     if result.Status == ErrorType.NoError:
@@ -360,41 +367,27 @@ def set_clam_last_caught(guild_id: int) -> bool:
     return False
 
 
-# TODO:
-#   Change leaderboard to work with DB
 async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bool):
-    data: Dict[str, Any] = retrieve_guild_data()
-    guild_data: Dict = data[str(guild.id)]['crateboard' if coins else 'clamboard']
+    guild_members = [member.id for member in guild.members]
+    top_ten = repository.get_top_group_scores(guild_members, Claimable.Coin if coins else Claimable.Clam)
+    if isinstance(top_ten, Error) and top_ten.Status == ErrorType.MySqlException:
+        logging.error(top_ten.Message)
+        return
 
-    leaderboard: Dict[str, int] = dict(
-        sorted(guild_data.items(), key=lambda item: item[1], reverse=True)
-    )
-    users: List[str] = [*leaderboard]
     leaderboard_embed: discord.Embed = discord.Embed(
         title=f"{'Coins' if coins else 'Clams'} leaderboard",
         color=discord.Color.red()
     )
 
     # Display top 10
-    position: int = 0
-    skipped: int = 0
-    while position < 10:
-        try:
-            user: Member | None = guild.get_member(int(users[position+skipped]))
-            if user is None:
-                # User may not exist, but we still need to get up to 10 users if they exist later
-                skipped += 1
-                continue
-        except IndexError:  # Not enough server members have got on the leaderboard
-            break
+    for count, record in enumerate(top_ten):
+        user: Member | None = guild.get_member(record[0])
 
         leaderboard_embed.add_field(
-            name=f"{position+1} {user.display_name}",
-            value=f"{leaderboard[str(user.id)]} {'coins' if coins else 'clams'}",
+            name=f"{count+1} {user.nick if user.nick is not None else user.display_name}",
+            value=f"{record[1]} {'coins' if coins else 'clams'}",
             inline=False
         )
-
-        position += 1
 
     await channel.send(embed=leaderboard_embed)
 

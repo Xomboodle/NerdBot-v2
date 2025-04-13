@@ -338,7 +338,7 @@ def set_last_caught(guild_id: int, claimable: Claimable, time: datetime) -> Erro
                              "SET LastCaught = %(time)s "
                              "WHERE GuildID = %(guildId)s")
     elif claimable == Claimable.Clam:
-        q_set_last_caught = ("UPDATE GUILD_CLAM "
+        q_set_last_caught = ("UPDATE GUILD_CLAMS "
                              "SET LastCaught = %(time)s "
                              "WHERE GuildID = %(guildId)s")
     else:
@@ -415,8 +415,6 @@ def set_current_claimable(guild_id: int, claimable: Claimable, message_id: int |
     if isinstance(cnx, Error):
         return cnx
 
-    print("Connection established. Running set_current_claimable with parameters:\n",
-          f"\t guild_id: {guild_id}\n\t claimable: {claimable}\n\t message_id: {message_id}\n\t channel_id: {channel_id}")
     params = {
         "guildId": guild_id,
         "current": message_id,
@@ -501,7 +499,7 @@ def get_user_score(user_id: int, claimable: Claimable) -> int | Error:
         try:
             cursor.execute(q_select_user, params)
             user_exists = cursor.fetchone()
-            if user_exists != 1:
+            if user_exists is None:
                 new_user_response = insert_user(user_id, cnx, cursor)
                 if new_user_response.Status == ErrorType.NoError:
                     response = 10 if claimable == Claimable.Coin else 0
@@ -513,7 +511,7 @@ def get_user_score(user_id: int, claimable: Claimable) -> int | Error:
                 elif claimable == Claimable.Coin:
                     cursor.execute(q_get_user_coin_score, params)
 
-                response = cursor.fetchone()
+                response = cursor.fetchone()[0]
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
         finally:
@@ -578,23 +576,26 @@ def get_top_group_scores(user_ids: list[int], claimable: Claimable) -> list[tupl
     params = {
         "userIds": user_ids
     }
+    in_params = ','.join(['%s'] * len(user_ids))
 
-    q_get_group_coin_score = ("SELECT TOP (10) UserId, CoinsCaught "
+    q_get_group_coin_score = ("SELECT UserId, CoinsCaught "
                               "FROM USERS "
-                              "WHERE UserId IN %(userIds)s "
-                              "ORDER BY CoinsCaught DESC")
+                              "WHERE UserId IN (%s) "
+                              "ORDER BY CoinsCaught DESC "
+                              "LIMIT 10") % in_params
 
-    q_get_group_clam_score = ("SELECT TOP (10) UserId, ClamsCaught "
+    q_get_group_clam_score = ("SELECT UserId, ClamsCaught "
                               "FROM USERS "
-                              "WHERE UserId IN %(userIds)s "
-                              "ORDER BY ClamsCaught DESC")
+                              "WHERE UserId IN (%s) "
+                              "ORDER BY ClamsCaught DESC "
+                              "LIMIT 10") % in_params
 
     with cnx.cursor() as cursor:
         try:
             if claimable == Claimable.Coin:
-                cursor.execute(q_get_group_coin_score, params)
+                cursor.execute(q_get_group_coin_score, params["userIds"])
             elif claimable == Claimable.Clam:
-                cursor.execute(q_get_group_clam_score, params)
+                cursor.execute(q_get_group_clam_score, params["userIds"])
             response = cursor.fetchall()
         except mysql.connector.Error as error:
             response = Error(ErrorType.MySqlException, error.msg)
