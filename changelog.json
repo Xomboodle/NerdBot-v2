@@ -230,5 +230,19 @@
         "3": "Made `update` search query case-insensitive."
       }
     }
+  },
+  "17": {
+    "title": "V.1.1.0 - The Database",
+    "content": {
+      "subtext": "Major backend changes, finally. Plus a little QoL ;)",
+      "items": {
+        "0": "Migrated storage of data to a database server.",
+        "1": "Coin and clam values are now independent of the server, and will carry across.",
+        "2": "Nerdbot now only gives a work-related response to the word 'work'.",
+        "3": "Added a variety of work-related responses.",
+        "4": "Simplified behind-the-scenes process of muting/unmuting.",
+        "5": "Improved some code readability."
+      }
+    }
   }
 }
