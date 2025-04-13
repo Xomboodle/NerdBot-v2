@@ -249,7 +249,8 @@ async def respond_to_message(channel: TextChannel | Thread, content: str, bot: B
 
     # Specific cases
     if re.findall(r'\bwork\b', content):
-        await channel.send("WORK?! You should be gaming!")
+        response: str = constants.WORK_RESPONSES[random.randint(0, len(constants.WORK_RESPONSES)-1)]
+        await channel.send(response)
     elif re.findall('inspire me', content):
         inspiration = inspirobot.generate()
         await channel.send(inspiration.url)

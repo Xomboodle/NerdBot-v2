@@ -46,3 +46,8 @@ INSULTS: List[str] = [
         "{arg}'s mother is a hamster and their father smells of elderberries!"
     ),
 ]
+WORK_RESPONSES = [
+    "WORK?! You should be gaming!",
+    "I hope I didn't hear you being productive.",
+    "That's enough work now. I'm prescribing you with game time."
+]
