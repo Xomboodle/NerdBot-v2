@@ -102,7 +102,6 @@ async def claim(guild: Guild, channel: Channel, author: Person):
     if current_claimable is None:
         return
 
-    print(current_claimable)
     if not current_claimable:
         await channel.send("No crate to claim!")
         return
@@ -158,33 +157,19 @@ async def clam(guild: Guild, channel: Channel, author: Person):
     functions.set_clam_last_caught(guild.id)
 
 
-async def coins(guild: Guild, channel: Channel, author: Person):
-    data: Dict[str, Any] = functions.retrieve_guild_data()
-    guild_id: str = str(guild.id)
-    author_id: str = str(author.id)
-
-    # In case no coins have been won or claimed from crates
-    if data[guild_id]['crateboard'][author_id] is None:
-        data[guild_id]['crateboard'][author_id] = 10
-        functions.write_to_guild_data(data)
+async def coins(channel: Channel, author: Person):
+    score = functions.get_coin_score(author.id)
 
     await channel.send(
-        f"You have **{data[guild_id]['crateboard'][author_id]}** coins!"
+        f"You have **{score}** coins!"
     )
 
 
-async def clams(guild: Guild, channel: Channel, author: Person):
-    data: Dict[str, Any] = functions.retrieve_guild_data()
-    guild_id: str = str(guild.id)
-    author_id: str = str(author.id)
-
-    # In case no clams have been won or claimed from crates
-    if data[guild_id]['clamboard'][author_id] is None:
-        data[guild_id]['clamboard'][author_id] = 0
-        functions.write_to_guild_data(data)
+async def clams(channel: Channel, author: Person):
+    score = functions.get_clam_score(author.id)
 
     await channel.send(
-        f"You have **{data[guild_id]['clamboard'][author_id]}** clams!"
+        f"You have **{score}** clams!"
     )
 
 

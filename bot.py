@@ -108,7 +108,7 @@ async def clam(ctx: Context):
 
 @bot.command()
 async def clams(ctx: Context):
-    await customs.clams(ctx.guild, ctx.channel, ctx.author)
+    await customs.clams(ctx.channel, ctx.author)
 
 
 @bot.command()
@@ -118,7 +118,7 @@ async def clamscore(ctx: Context):
 
 @bot.command()
 async def coins(ctx: Context):
-    await customs.coins(ctx.guild, ctx.channel, ctx.author)
+    await customs.coins(ctx.channel, ctx.author)
 
 
 @bot.command()

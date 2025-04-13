@@ -317,11 +317,17 @@ async def edit_clam_message(message_id: int, channel: TextChannel | Thread, memb
     await message.edit(embed=claim_embed)
 
 
-def update_coin_score(member_id: int, score: int) -> bool:
+def get_coin_score(member_id: int) -> int | bool:
     member_score: int = repository.get_user_score(member_id, Claimable.Coin)
     if isinstance(member_score, Error) and member_score.Status == ErrorType.MySqlException:
         logging.error(member_score.Message)
         return False
+
+    return member_score
+
+
+def update_coin_score(member_id: int, score: int) -> bool:
+    member_score: int = get_coin_score(member_id)
 
     member_score += score
     result = repository.set_user_score(member_id, member_score, Claimable.Coin)
@@ -342,11 +348,17 @@ def set_coin_last_caught(guild_id: int) -> bool:
     return False
 
 
-def update_clam_score(member_id: int):
+def get_clam_score(member_id: int) -> int | bool:
     member_score: int = repository.get_user_score(member_id, Claimable.Clam)
     if isinstance(member_score, Error) and member_score.Status == ErrorType.MySqlException:
         logging.error(member_score.Message)
         return False
+
+    return member_score
+
+
+def update_clam_score(member_id: int):
+    member_score: int = get_clam_score(member_id)
 
     member_score += 1
     result = repository.set_user_score(member_id, member_score, Claimable.Clam)
