@@ -148,13 +148,6 @@ def set_current_clam_claimable(guild_id: int, message_id: int | None, channel_id
     return False
 
 
-def retrieve_guild_data() -> Dict[str, Any]:
-    with open('guilddata.json', 'r') as r_file:
-        data: Dict[str, Any] = json.load(r_file)
-
-    return data
-
-
 def retrieve_changelog() -> Tuple[Dict[str, Any], str]:
     with open('changelog.json', 'r') as r_file:
         data: Dict[str, Any] = json.load(r_file)
@@ -162,28 +155,6 @@ def retrieve_changelog() -> Tuple[Dict[str, Any], str]:
     latest_key: str = sorted([*data.keys()], key=lambda item: int(item), reverse=True)[0]
 
     return data, latest_key
-
-
-def retrieve_claimables_data() -> Dict[str, Any]:
-    with open('claimables.json', 'r') as r_file:
-        data: Dict[str, Any] = json.load(r_file)
-
-    return data
-
-
-def write_to_guild_data(data: Dict[str, Any]):
-    with open('guilddata.json', 'w') as w_file:
-        json.dump(data, w_file)
-
-
-def write_to_changelog(data: Dict[str, Any]):
-    with open('changelog.json', 'w') as w_file:
-        json.dump(data, w_file)
-
-
-def write_to_claimables(data: Dict[str, Any]):
-    with open('claimables.json', 'w') as w_file:
-        json.dump(data, w_file)
 
 
 def format_update(data: Dict[str, Any]) -> str:
