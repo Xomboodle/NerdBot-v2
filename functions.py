@@ -224,14 +224,22 @@ async def generate_claimable(guild: Guild,
         2) The last crate/clam was claimed more than 15 minutes ago
     """
     now: float = time.time()
-    coin_last_caught: float = repository.get_last_caught(guild.id, Claimable.Coin).timestamp()
+    coin_last_caught: datetime | Error = repository.get_last_caught(guild.id, Claimable.Coin)
+    if isinstance(coin_last_caught, Error):
+        coin_last_caught.log()
+        return
+    coin_last_caught_timestamp: float = coin_last_caught.timestamp()
     coin_unclaimed: CurrentClaimable = repository.get_current_claimable(guild.id, Claimable.Coin)
-    clam_last_caught: float = repository.get_last_caught(guild.id, Claimable.Clam).timestamp()
+    clam_last_caught: datetime | Error = repository.get_last_caught(guild.id, Claimable.Clam)
+    if isinstance(clam_last_caught, Error):
+        clam_last_caught.log()
+        return
+    clam_last_caught_timestamp: float = clam_last_caught.timestamp()
     clam_unclaimed: CurrentClaimable = repository.get_current_claimable(guild.id, Claimable.Clam)
 
-    generate[0] = (now - coin_last_caught >= constants.FIFTEEN_MINUTES) and \
+    generate[0] = (now - coin_last_caught_timestamp >= constants.FIFTEEN_MINUTES) and \
                   (coin_unclaimed["current"] is None)
-    generate[1] = (now - clam_last_caught >= constants.FIFTEEN_MINUTES) and \
+    generate[1] = (now - clam_last_caught_timestamp >= constants.FIFTEEN_MINUTES) and \
                   (clam_unclaimed["current"] is None)
 
     number: int = random.randint(1, 20)
