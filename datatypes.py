@@ -1,4 +1,7 @@
+from types import UnionType
 from typing import TypedDict
+
+import discord
 
 
 class Guild(TypedDict):
@@ -12,3 +15,6 @@ class CurrentClaimable(TypedDict):
 
 
 Guilds = list[Guild]
+
+Channel: UnionType = discord.TextChannel | discord.Thread
+Person: UnionType = discord.User | discord.Member
