@@ -1,18 +1,21 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 
 import discord
 from discord import Guild, Reaction, Message
 from discord.ext import commands
 from discord.ext.commands import Bot
+from discord.ext.commands.context import Context
 from dotenv import load_dotenv
 
 from cogs.collectible import CollectibleCog
 from cogs.interaction import InteractionCog
 from cogs.moderation import ModerationCog
 from constants import REACTION_IMAGES
+from embeds import generate_help_embed
 from functions import (
     add_new_guild,
+    find_title,
     format_update,
     get_all_guilds,
     get_guild,
@@ -26,7 +29,7 @@ from functions import (
     validate_author
 )
 from cogs.cog_template import CogTemplate
-from datatypes import Guilds, Person
+from datatypes import Guilds, Person, DefaultInput
 
 load_dotenv()
 
@@ -54,13 +57,16 @@ class NerdCoreCog(CogTemplate):
     """
     The core cog. Will always be enabled in every guild the bot is a part of.
     """
+    def __init__(self, bot: NerdBot):
+        super().__init__(bot)
+        self.changelog: Dict[str, Any] = {}
+        self.latest_key: str = ""
+
     @commands.Cog.listener()
     async def on_ready(self):
         await super().on_ready()
 
-        changelog: Dict[str, Any]
-        latest_key: str
-        changelog, latest_key = retrieve_changelog()
+        self.changelog, self.latest_key = retrieve_changelog()
 
         all_guilds: Guilds | None = get_all_guilds()
         all_guild_ids = [x["id"] for x in all_guilds]
@@ -83,16 +89,16 @@ class NerdCoreCog(CogTemplate):
                 latest_sent: int | None = get_guild_changelog_version(guild.id)
                 if latest_sent is None:
                     break
-                if latest_sent < int(latest_key):
+                if latest_sent < int(self.latest_key):
                     send_changelog = True
 
             if send_changelog:
                 send_changelog = False
-                set_guild_changelog_version(guild.id, int(latest_key))
+                set_guild_changelog_version(guild.id, int(self.latest_key))
                 channel: discord.TextChannel = guild.system_channel
                 if channel is not None:
                     await channel.send(
-                        f"# NEW UPDATE:\n{format_update(changelog[latest_key])}"
+                        f"# NEW UPDATE:\n{format_update(self.changelog[self.latest_key])}"
                     )
 
     @commands.Cog.listener()
@@ -140,6 +146,38 @@ class NerdCoreCog(CogTemplate):
             return
 
         await respond_to_message(message.channel, message_content, self.bot)
+
+    @commands.command()
+    async def help(self, ctx: Context):
+        channel = ctx.channel
+
+        help_embed = generate_help_embed(prefix=self.bot.command_prefix)
+        await channel.send(embed=help_embed)
+
+    @commands.command()
+    async def update(self, ctx: Context, search: DefaultInput = None):
+        channel = ctx.channel
+
+        # Essentially calling recent
+        if search is None:
+            await channel.send(format_update(self.changelog[self.latest_key]))
+            return
+
+        titles: List[Tuple[str, str]] = [
+            (key, item['title']) for key, item in self.changelog.items()
+        ]
+        key: str = find_title(search, titles)
+        if key == "-1":
+            await channel.send("Hmm, I couldn't find a version like that!")
+            return
+
+        await channel.send(format_update(self.changelog[key]))
+
+    @commands.command()
+    async def recent(self, ctx: Context):
+        channel = ctx.channel
+
+        await channel.send(format_update(self.changelog[self.latest_key]))
 
 
 nerdbot = NerdBot()
