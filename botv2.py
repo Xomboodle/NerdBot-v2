@@ -30,6 +30,7 @@ from functions import (
 )
 from cogs.cog_template import CogTemplate
 from datatypes import Guilds, Person, DefaultInput
+from paginator import Paginator
 
 load_dotenv()
 
@@ -151,8 +152,11 @@ class NerdCoreCog(CogTemplate):
     async def help(self, ctx: Context):
         channel = ctx.channel
 
-        help_embed = generate_help_embed(prefix=self.bot.command_prefix)
-        await channel.send(embed=help_embed)
+        pages = Paginator(generate_help_embed, 4)
+        pages.message = await channel.send(
+            embed=pages.call().set_footer(text=f"Page 1 of {pages.max_page}"),
+            view=pages
+        )
 
     @commands.command()
     async def update(self, ctx: Context, search: DefaultInput = None):
