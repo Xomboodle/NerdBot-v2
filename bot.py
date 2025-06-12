@@ -1,189 +1,188 @@
-"""main.py"""
-
-# IMPORTS #
 import os
-
-from types import UnionType
+from typing import Dict, Any, List, Tuple
 
 import discord
+from discord import Guild, Reaction, Message
 from discord.ext import commands
-from discord.ext.commands import has_permissions
+from discord.ext.commands import Bot
 from discord.ext.commands.context import Context
-
 from dotenv import load_dotenv
 
-from webserver import keep_alive
+from cogs.collectible import CollectibleCog
+from cogs.interaction import InteractionCog
+from cogs.moderation import ModerationCog
+from constants import REACTION_IMAGES
+from embeds import generate_help_embed
+from functions import (
+    add_new_guild,
+    find_title,
+    format_update,
+    get_all_guilds,
+    get_guild,
+    get_guild_changelog_version,
+    get_last_reactor,
+    respond_to_message,
+    retrieve_changelog,
+    set_active_guild,
+    set_guild_changelog_version,
+    set_last_reactor,
+    validate_author
+)
+from cogs.cog_template import CogTemplate
+from datatypes import Guilds, Person, DefaultInput
+from paginator import Paginator
 
-import commands as customs
-
-import functions
-
-import embeds
-
-
-DefaultInput: UnionType = str | None
-# Set the variables in .env file as environment variables
 load_dotenv()
 
-# Token requires environment variable, which uses os import.
-# By general rule, we want to avoid having imports in constants.py, except for typing,
-# so this will be set here instead.
-TOKEN: str = os.environ.get('TOKEN')
 
-# region Setup
-"""
-    Setting up the bot. Includes permissions, activity display on the profile,
-    and the bot itself.
-"""
-# Permissions
-intents = discord.Intents.all()
-# Bot activity
-activity = discord.Activity(type=discord.ActivityType.playing,
-                            name="you for a fool")
-# The bot
-bot = commands.Bot(command_prefix='!', activity=activity,
-                   help_command=None, intents=intents)
+class NerdBot(Bot):
 
-# Uses command prefix, so needs that set first
-HELP = embeds.generate_help_embed(bot.command_prefix)
-# endregion
+    def __init__(self):
+        intents = discord.Intents.all()
+        self.TOKEN = os.environ.get('TOKEN')
+        super().__init__(command_prefix='!', intents=intents, help_command=None)
+        self.cogs_to_load = [
+            CollectibleCog(self),
+            InteractionCog(self),
+            ModerationCog(self)
+        ]
+
+    async def setup_hook(self) -> None:
+        for cog in self.cogs_to_load:
+            await self.add_cog(cog)
+        # Intentionally load last
+        await self.add_cog(NerdCoreCog(self))
 
 
-# region Listen Events
-@bot.listen()
-async def on_ready():
-    await customs.on_ready(bot=bot)
+class NerdCoreCog(CogTemplate):
+    """
+    The core cog. Will always be enabled in every guild the bot is a part of.
+    """
+    def __init__(self, bot: NerdBot):
+        super().__init__(bot)
+        self.changelog: Dict[str, Any] = {}
+        self.latest_key: str = ""
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await super().on_ready()
+
+        self.changelog, self.latest_key = retrieve_changelog()
+
+        all_guilds: Guilds | None = get_all_guilds()
+        all_guild_ids = [x["id"] for x in all_guilds]
+
+        send_changelog = False
+        for guild in self.bot.guilds:
+            if all_guilds is None:
+                break
+
+            # Not yet in DB
+            if guild.id not in all_guild_ids:
+                add_new_guild(guild.id)
+                send_changelog = True
+            # If in DB, removed bot, then rejoined.
+            elif not next((item for item in all_guilds if item["id"] == guild.id and item["active"]), False):
+                set_active_guild(guild.id)
+
+            # If in DB and changelog version is outdated.
+            if not send_changelog:
+                latest_sent: int | None = get_guild_changelog_version(guild.id)
+                if latest_sent is None:
+                    break
+                if latest_sent < int(self.latest_key):
+                    send_changelog = True
+
+            if send_changelog:
+                send_changelog = False
+                set_guild_changelog_version(guild.id, int(self.latest_key))
+                channel: discord.TextChannel = guild.system_channel
+                if channel is not None:
+                    await channel.send(
+                        f"# NEW UPDATE:\n{format_update(self.changelog[self.latest_key])}"
+                    )
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: Guild):
+        guild_result: Guild | bool | None = get_guild(guild.id)
+        if guild_result is None:
+            return
+
+        # New guild
+        if not guild_result:
+            add_new_guild(guild.id)
+        # Bot is rejoining guild
+        else:
+            set_active_guild(guild.id)
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction: Reaction, user: Person):
+        guild_id: int = reaction.message.guild.id
+        last_reactor = get_last_reactor(guild_id)
+        if last_reactor is None:
+            return
+
+        # Spam prevention
+        if not last_reactor:
+            set_last_reactor(guild_id, user.id)
+        elif last_reactor != user.id:
+            set_last_reactor(guild_id, user.id)
+        else:
+            return
+
+        if isinstance(reaction.emoji, str):
+            reaction_name: str = reaction.emoji
+        else:
+            reaction_name: str = reaction.emoji.name
+
+        if reaction_name in REACTION_IMAGES:
+            await reaction.message.channel.send(REACTION_IMAGES[reaction_name])
+
+    @commands.Cog.listener()
+    async def on_message(self, message: Message):
+        message_content: str = message.content.lower()
+
+        # Ignore own messages
+        if validate_author(message.author, self.bot):
+            return
+
+        await respond_to_message(message.channel, message_content, self.bot)
+
+    @commands.command()
+    async def help(self, ctx: Context):
+        channel = ctx.channel
+
+        pages = Paginator(generate_help_embed, 4)
+        pages.message = await channel.send(
+            embed=pages.call().set_footer(text=f"Page 1 of {pages.max_page}"),
+            view=pages
+        )
+
+    @commands.command()
+    async def update(self, ctx: Context, search: DefaultInput = None):
+        channel = ctx.channel
+
+        # Essentially calling recent
+        if search is None:
+            await channel.send(format_update(self.changelog[self.latest_key]))
+            return
+
+        titles: List[Tuple[str, str]] = [
+            (key, item['title']) for key, item in self.changelog.items()
+        ]
+        key: str = find_title(search, titles)
+        if key == "-1":
+            await channel.send("Hmm, I couldn't find a version like that!")
+            return
+
+        await channel.send(format_update(self.changelog[key]))
+
+    @commands.command()
+    async def recent(self, ctx: Context):
+        channel = ctx.channel
+
+        await channel.send(format_update(self.changelog[self.latest_key]))
 
 
-@bot.listen()
-async def on_guild_join(guild: discord.Guild):
-    await customs.on_guild_join(guild)
-
-
-@bot.listen()
-async def on_message(message: discord.Message):
-    message_content: str = message.content.lower()
-
-    # Don't check messages sent by the bot itself
-    if functions.validate_author(message.author, bot):
-        return
-
-    await functions.generate_claimable(message.guild, message.channel)
-
-    await functions.respond_to_message(message.channel, message_content, bot)
-
-
-@bot.listen()
-async def on_reaction_add(reaction: discord.Reaction, user: discord.User | discord.Member):
-    await customs.on_reaction_add(reaction, user)
-# endregion
-
-
-# region User Commands
-@bot.command(aliases=['mute'])
-@has_permissions(manage_permissions=True)
-async def bonk(ctx: Context, member: discord.Member | DefaultInput):
-    if member is None:
-        await ctx.send("No input given!")
-        return
-
-    if not functions.validate_usertype(member, discord.Member):
-        await ctx.send(f"{member} is not a valid input")
-        return
-
-    await customs.restrict(member, ctx.author, ctx.guild)
-
-    await ctx.send(f"<@!{member.id}> has been sent to jail.")
-
-
-@bot.command()
-async def claim(ctx: Context):
-    await customs.claim(ctx.guild, ctx.channel, ctx.author)
-
-
-@bot.command()
-async def clam(ctx: Context):
-    await customs.clam(ctx.guild, ctx.channel, ctx.author)
-
-
-@bot.command()
-async def clams(ctx: Context):
-    await customs.clams(ctx.channel, ctx.author)
-
-
-@bot.command()
-async def clamscore(ctx: Context):
-    await functions.get_leaderboard(ctx.guild, ctx.channel, False)
-
-
-@bot.command()
-async def coins(ctx: Context):
-    await customs.coins(ctx.channel, ctx.author)
-
-
-@bot.command()
-async def help(ctx: Context):
-    await ctx.channel.send(embed=HELP)
-
-
-@bot.command()
-async def highscore(ctx: Context):
-    await functions.get_leaderboard(ctx.guild, ctx.channel, True)
-
-
-@bot.command()
-async def insult(ctx: Context, arg: DefaultInput = None):
-    if arg is None:
-        await ctx.channel.send("At least choose someone to insult!")
-        return
-    await customs.insult(ctx.channel, ctx.message, ctx.message.author, arg)
-
-
-@bot.command()
-async def meme(ctx: Context):
-    await customs.meme(ctx.channel)
-
-
-@bot.command()
-async def recent(ctx: Context):
-    await customs.recent(ctx.channel)
-
-
-@bot.command()
-async def smite(ctx: Context, arg: DefaultInput = None):
-    self: bool = True if arg is None else False
-    user: str = arg if not self else str(ctx.message.author.id)
-    await customs.smite(ctx.channel, user, self)
-
-
-@bot.command()
-async def update(ctx: Context, arg: DefaultInput = None):
-    await customs.update(ctx.channel, arg)
-
-
-@bot.command(aliases=['unmute'])
-@has_permissions(manage_permissions=True)
-async def unbonk(ctx: Context, member: discord.Member | DefaultInput):
-    if member is None:
-        await ctx.send("No input given!")
-        return
-
-    if not functions.validate_usertype(member, discord.Member):
-        await ctx.send(f"{member} is not a valid input")
-        return
-
-    altered: bool = await customs.unrestrict(member, ctx.guild)
-    if not altered:
-        await ctx.send(f"Looks like I haven't changed that user's permissions at all. No changes needed!")
-        return
-
-    await ctx.send(f"<@!{member.id}> has been released from jail.")
-
-# endregion
-
-
-try:
-    keep_alive()
-    bot.run(TOKEN)
-except discord.errors.HTTPException:
-    os.system('kill 1')
+nerdbot = NerdBot()
+nerdbot.run(nerdbot.TOKEN)
