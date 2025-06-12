@@ -18,3 +18,4 @@ Guilds = list[Guild]
 
 Channel: UnionType = discord.TextChannel | discord.Thread
 Person: UnionType = discord.User | discord.Member
+DefaultInput: UnionType = str | None

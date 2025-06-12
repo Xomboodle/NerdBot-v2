@@ -74,7 +74,7 @@ class CollectibleCog(CogTemplate):
             return
 
         if not current_claimable:
-            await channel.send("No claim to claim!")
+            await channel.send("No clam to claim!")
             return
 
         # Claim in the same channel as the collectible

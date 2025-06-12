@@ -8,6 +8,7 @@ from discord.ext.commands import Bot
 from dotenv import load_dotenv
 
 from cogs.collectible import CollectibleCog
+from cogs.interaction import InteractionCog
 from constants import REACTION_IMAGES
 from functions import (
     add_new_guild,
@@ -38,7 +39,8 @@ class NerdBot(Bot):
         self.TOKEN = os.environ.get('TOKEN')
         super().__init__(command_prefix='!', intents=intents, help_command=None)
         self.cogs_to_load = [
-            CollectibleCog(self)
+            CollectibleCog(self),
+            InteractionCog(self)
         ]
 
     async def setup_hook(self) -> None:
@@ -49,7 +51,9 @@ class NerdBot(Bot):
 
 
 class NerdCoreCog(CogTemplate):
-
+    """
+    The core cog. Will always be enabled in every guild the bot is a part of.
+    """
     @commands.Cog.listener()
     async def on_ready(self):
         await super().on_ready()
@@ -66,12 +70,15 @@ class NerdCoreCog(CogTemplate):
             if all_guilds is None:
                 break
 
+            # Not yet in DB
             if guild.id not in all_guild_ids:
                 add_new_guild(guild.id)
                 send_changelog = True
+            # If in DB, removed bot, then rejoined.
             elif not next((item for item in all_guilds if item["id"] == guild.id and item["active"]), False):
                 set_active_guild(guild.id)
 
+            # If in DB and changelog version is outdated.
             if not send_changelog:
                 latest_sent: int | None = get_guild_changelog_version(guild.id)
                 if latest_sent is None:
