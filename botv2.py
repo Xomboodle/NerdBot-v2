@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from cogs.collectible import CollectibleCog
 from cogs.interaction import InteractionCog
+from cogs.moderation import ModerationCog
 from constants import REACTION_IMAGES
 from functions import (
     add_new_guild,
@@ -29,8 +30,6 @@ from datatypes import Guilds, Person
 
 load_dotenv()
 
-#
-
 
 class NerdBot(Bot):
 
@@ -40,7 +39,8 @@ class NerdBot(Bot):
         super().__init__(command_prefix='!', intents=intents, help_command=None)
         self.cogs_to_load = [
             CollectibleCog(self),
-            InteractionCog(self)
+            InteractionCog(self),
+            ModerationCog(self)
         ]
 
     async def setup_hook(self) -> None:

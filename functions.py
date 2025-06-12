@@ -359,7 +359,7 @@ def set_clam_last_caught(guild_id: int) -> bool:
     return False
 
 
-async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bool):
+def get_leaderboard(guild: Guild, coins: bool):
     guild_members = [member.id for member in guild.members]
     top_ten = repository.get_top_group_scores(guild_members, Claimable.Coin if coins else Claimable.Clam)
     if isinstance(top_ten, Error) and top_ten.Status == ErrorType.MySqlException:
@@ -381,7 +381,7 @@ async def get_leaderboard(guild: Guild, channel: TextChannel | Thread, coins: bo
             inline=False
         )
 
-    await channel.send(embed=leaderboard_embed)
+    return leaderboard_embed
 
 
 def get_random_number(start: int, end: int) -> int:
