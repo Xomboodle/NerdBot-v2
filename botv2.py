@@ -2,11 +2,12 @@ import os
 from typing import Dict, Any
 
 import discord
-from discord import Guild, Reaction
+from discord import Guild, Reaction, Message
 from discord.ext import commands
 from discord.ext.commands import Bot
 from dotenv import load_dotenv
 
+from cogs.collectible import CollectibleCog
 from constants import REACTION_IMAGES
 from functions import (
     add_new_guild,
@@ -14,9 +15,13 @@ from functions import (
     get_all_guilds,
     get_guild,
     get_guild_changelog_version,
+    get_last_reactor,
+    respond_to_message,
     retrieve_changelog,
     set_active_guild,
-    set_guild_changelog_version, get_last_reactor, set_last_reactor
+    set_guild_changelog_version,
+    set_last_reactor,
+    validate_author
 )
 from cogs.cog_template import CogTemplate
 from datatypes import Guilds, Person
@@ -32,8 +37,14 @@ class NerdBot(Bot):
         intents = discord.Intents.all()
         self.TOKEN = os.environ.get('TOKEN')
         super().__init__(command_prefix='!', intents=intents, help_command=None)
+        self.cogs_to_load = [
+            CollectibleCog(self)
+        ]
 
     async def setup_hook(self) -> None:
+        for cog in self.cogs_to_load:
+            await self.add_cog(cog)
+        # Intentionally load last
         await self.add_cog(NerdCoreCog(self))
 
 
@@ -112,6 +123,16 @@ class NerdCoreCog(CogTemplate):
 
         if reaction_name in REACTION_IMAGES:
             await reaction.message.channel.send(REACTION_IMAGES[reaction_name])
+
+    @commands.Cog.listener()
+    async def on_message(self, message: Message):
+        message_content: str = message.content.lower()
+
+        # Ignore own messages
+        if validate_author(message.author, self.bot):
+            return
+
+        await respond_to_message(message.channel, message_content, self.bot)
 
 
 nerdbot = NerdBot()
