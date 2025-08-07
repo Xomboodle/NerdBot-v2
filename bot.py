@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from cogs.collectible import CollectibleCog
 from cogs.interaction import InteractionCog
 from cogs.moderation import ModerationCog
+from cogs.audio import AudioCog
 from constants import REACTION_IMAGES
 from embeds import generate_help_embed
 from functions import (
@@ -44,7 +45,8 @@ class NerdBot(Bot):
         self.cogs_to_load = [
             CollectibleCog(self),
             InteractionCog(self),
-            ModerationCog(self)
+            ModerationCog(self),
+            AudioCog(self)
         ]
 
     async def setup_hook(self) -> None:

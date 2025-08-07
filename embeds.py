@@ -2,6 +2,7 @@
 
 import discord
 from discord import Embed
+from mutagen import File, FileType
 
 
 def generate_help_embed(prefix: str = '!', page: int = 0) -> Embed:
@@ -103,3 +104,22 @@ def moderation_help(embed: Embed):
         name="unmute <user>",
         value="```Release a user from jail. Requires Manages Permissions.```"
     )
+
+
+def generate_playing_embed(track: str):
+    audio_file: FileType = File(track)
+
+    playing_embed: Embed = discord.Embed(
+        title=f"Now Playing:",
+        color=discord.Color.blurple()
+    )
+
+    # Remove extension from track name
+    playing_embed.description = "".join(track.split(".")[:-1])
+    if audio_file is not None and audio_file.info.length:
+        playing_embed.add_field(
+            name=f"Duration: {audio_file.info.length:.0f}s",
+            value=""
+        )
+
+    return playing_embed
