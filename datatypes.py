@@ -14,6 +14,10 @@ class CurrentClaimable(TypedDict):
     currentChannel: int
 
 
+class TrackList(TypedDict):
+    audioFiles: list[list[str]]
+
+
 Guilds = list[Guild]
 
 Channel: UnionType = discord.TextChannel | discord.Thread

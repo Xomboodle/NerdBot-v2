@@ -19,3 +19,10 @@ class WarningType(Enum):
 
 class ModerationType(Enum):
     Mute = 1
+
+
+class TrackSortType(Enum):
+    AlphabeticalAsc = 0
+    AlphabeticalDes = 1
+    DurationAsc = 2
+    DurationDes = 3

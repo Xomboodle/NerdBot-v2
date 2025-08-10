@@ -154,7 +154,7 @@ class NerdCoreCog(CogTemplate):
     async def help(self, ctx: Context):
         channel = ctx.channel
 
-        pages = Paginator(generate_help_embed, 4)
+        pages = Paginator(generate_help_embed, self.bot.cogs.__len__(), self.bot.command_prefix)
         pages.message = await channel.send(
             embed=pages.call().set_footer(text=f"Page 1 of {pages.max_page}"),
             view=pages
